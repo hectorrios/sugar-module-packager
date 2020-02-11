@@ -3,7 +3,7 @@
 
 use PHPUnit\Framework\TestCase;
 
-final class SugarModulePackager extends TestCase
+final class SugarModulePackagerTest extends TestCase
 {
     public function testSomeCase()
     {
