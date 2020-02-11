@@ -18,11 +18,13 @@
         "php": ">=5.6"
     },
     "require-dev": {
-        "phpunit/phpunit": "*"
+        "phpunit/phpunit": "*",
+        "mikey179/vfsstream": "^1.6"
     },
     "autoload": {
         "psr-4": {
-            "SugarModulePackager\\": "src/"
+            "SugarModulePackager\\": "src/",
+            "SugarModulePackager\\Test\\": "tests/"
         }
     }
 }
