@@ -6,6 +6,7 @@ namespace SugarModulePackager;
 
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ZipArchive;
 
 class Packager
 {
@@ -57,10 +58,6 @@ class Packager
     {
         $this->fileReaderWriterService = $readerWriter;
         $this->messageOutputter = $msgOutputter;
-    }
-
-    public function sayMessage($message) {
-        return "say $message" . PHP_EOL;
     }
 
     private function getSoftwareVersionNumber()
@@ -142,43 +139,45 @@ class Packager
     protected function getManifest($version = '')
     {
         $manifest = array();
-        if (!empty($version)) {
+        if (empty($version)) {
+            return $manifest;
+        }
 
-            // check existence of manifest template
-            $manifest_base = array(
-                'version' => $version,
-                'is_uninstallable' => true,
-                'published_date' => date('Y-m-d H:i:s'),
-                'type' => 'module',
-            );
 
-            if (file_exists($this->buildSimplePath($this->config_directory, $this->manifest_file))) {
-                require($this->buildSimplePath($this->config_directory, $this->manifest_file));
-                $manifest = array_replace_recursive($manifest_base, $manifest);
-            } else {
-                // create sample empty manifest file
-                $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
-                    "\$manifest['built_in_version'] = '';".PHP_EOL.
-                    "\$manifest['name'] = '';".PHP_EOL.
-                    "\$manifest['description'] = '';".PHP_EOL.
-                    "\$manifest['author'] = '".$this->manifest_default_author."';".PHP_EOL.
-                    "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".$this->manifest_default_install_version_string.";";
+        // check existence of manifest template
+        $manifest_base = array(
+            'version' => $version,
+            'is_uninstallable' => true,
+            'published_date' => date('Y-m-d H:i:s'),
+            'type' => 'module',
+        );
 
-                $this->fileReaderWriterService->writeFile($this->buildSimplePath($this->config_directory, $this->manifest_file),
-                    $manifestContent);
-            }
+        if (file_exists($this->buildSimplePath($this->config_directory, $this->manifest_file))) {
+            require($this->buildSimplePath($this->config_directory, $this->manifest_file));
+            $manifest = array_replace_recursive($manifest_base, $manifest);
+        } else {
+            // create sample empty manifest file
+            $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
+                "\$manifest['built_in_version'] = '';".PHP_EOL.
+                "\$manifest['name'] = '';".PHP_EOL.
+                "\$manifest['description'] = '';".PHP_EOL.
+                "\$manifest['author'] = '".$this->manifest_default_author."';".PHP_EOL.
+                "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".$this->manifest_default_install_version_string.";";
 
-            if ( empty($manifest['id']) ||
-                empty($manifest['built_in_version']) ||
-                empty($manifest['name']) ||
-                empty($manifest['version']) ||
-                empty($manifest['author']) ||
-                empty($manifest['acceptable_sugar_versions']['regex_matches']) ) {
-                $this->messageOutputter->message('Please fill in the required details on your ' .
-                    $this->buildSimplePath($this->config_directory, $this->manifest_file)  . ' file.');
-                // some problem... return empty manifest
-                return array();
-            }
+            $this->fileReaderWriterService->writeFile($this->buildSimplePath($this->config_directory, $this->manifest_file),
+                $manifestContent);
+        }
+
+        if ( empty($manifest['id']) ||
+            empty($manifest['built_in_version']) ||
+            empty($manifest['name']) ||
+            empty($manifest['version']) ||
+            empty($manifest['author']) ||
+            empty($manifest['acceptable_sugar_versions']['regex_matches']) ) {
+            $this->messageOutputter->message('Please fill in the required details on your ' .
+                $this->buildSimplePath($this->config_directory, $this->manifest_file)  . ' file.');
+            // some problem... return empty manifest
+            return array();
         }
 
         return $manifest;
