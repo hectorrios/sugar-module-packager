@@ -48,11 +48,34 @@ class FileReaderWriterTest extends TestCase
         $this->assertEquals($expectedContent, $contents);
     }
 
-    public function testReadFileWithNoFile()
+    public function testReadFileWithNonExistentFile()
     {
         $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
         $contents = $readerWriter->readFile('non_existing.php');
         $this->assertEquals('', $contents);
     }
 
+    public function testCopyFileWithBaseDirProvided()
+    {
+
+        $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
+        $expectedContent = 'Sample Content';
+        $readerWriter->writeFile('sample_write.php',
+            $expectedContent);
+
+        $readerWriter->copyFile('sample_write.php', 'sample_write_copy.php');
+        $this->assertTrue($this->rootDir->hasChild('sample_write_copy.php'));
+    }
+
+    public function testCopyFileWithoutBaseDirProvided()
+    {
+        $readerWriter = new FileReaderWriter();
+        $expectedContent = 'Sample Content';
+        $readerWriter->writeFile(
+            vfsStream::url('exampleDir' . DIRECTORY_SEPARATOR . 'sample_write_3.php'),
+            $expectedContent);
+        $readerWriter->copyFile(vfsStream::url('exampleDir' . DIRECTORY_SEPARATOR . 'sample_write_3.php'),
+            vfsStream::url('exampleDir' .  DIRECTORY_SEPARATOR . 'sample_write_3_copy.php'));
+        $this->assertTrue($this->rootDir->hasChild('sample_write_3_copy.php'));
+    }
 }

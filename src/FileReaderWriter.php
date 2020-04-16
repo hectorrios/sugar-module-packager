@@ -43,9 +43,12 @@ class FileReaderWriter
 
     public function copyFile($src, $dst)
     {
-        if (!empty($src) && !empty($dst)) {
-            copy($src, $dst);
+        if (empty($src) || empty($dst)) {
+            return;
         }
+        $src = $this->constructPathWithBase($src);
+        $dst = $this->constructPathWithBase($dst);
+        copy($src, $dst);
     }
 
     public function createDirectory($directory = '')
