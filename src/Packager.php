@@ -267,7 +267,7 @@ class Packager
         $zip->open($zipFile, ZipArchive::CREATE);
 
         // add all files to zip
-        $module_files_list = $this->getModuleFiles($this->pkg_directory);
+        $module_files_list = $this->getModuleFiles($this->config->getPkgDirectory());
         if (!empty($module_files_list)) {
             foreach ($module_files_list as $file_relative => $file_realpath) {
                 $zip->addFile($file_realpath, $file_relative);
@@ -291,8 +291,9 @@ class Packager
         );
 
         // adding the file as well, for reference purpose only
-        $this->fileReaderWriterService->writeFile($this->buildSimplePath($this->pkg_directory, $this->manifest_file), $manifestContent);
-        $zip->addFromString($this->manifest_file, $manifestContent);
+        $this->fileReaderWriterService->writeFile($this->buildSimplePath($this->config->getPkgDirectory(),
+            $this->config->getManifestFile()), $manifestContent);
+        $zip->addFromString($this->config->getManifestFile(), $manifestContent);
         $zip->close();
 
         $this->messageOutputter->message($this->getSoftwareInfo() . ' successfully packaged ' . $zipFile);
