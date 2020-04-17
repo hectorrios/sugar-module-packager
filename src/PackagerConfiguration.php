@@ -40,9 +40,73 @@ class PackagerConfiguration
      * PackagerConfiguration constructor.
      * @param string $packageRootDir
      */
-    public function __construct($packageRootDir)
+    public function __construct($packageRootDir = '')
     {
         $this->packageRootDir = $packageRootDir;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPackageRootDir()
+    {
+        return $this->packageRootDir;
+    }
+
+    /**
+     * @return string
+     */
+    public function getReleaseDirectory()
+    {
+        return $this->release_directory;
+    }
+
+    /**
+     * @return string
+     */
+    public function getConfigDirectory()
+    {
+        return $this->config_directory;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSrcDirectory()
+    {
+        return $this->src_directory;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPkgDirectory()
+    {
+        return $this->pkg_directory;
+    }
+
+    /**
+     * @return array
+     */
+    public function getFilesToRemoveFromZip()
+    {
+        return $this->files_to_remove_from_zip;
+    }
+
+    /**
+     * @return string
+     */
+    public function getManifestFile()
+    {
+        return $this->manifest_file;
+    }
+
+    /**
+     * @return string
+     */
+    public function getConfigInstalldefsFile()
+    {
+        return $this->config_installdefs_file;
     }
 
 
