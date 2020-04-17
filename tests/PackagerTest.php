@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use SugarModulePackager\EchoMessageOutputter;
 use SugarModulePackager\FileReaderWriter;
 use SugarModulePackager\Packager;
+use SugarModulePackager\PackagerConfiguration;
 
 class PackagerTest extends TestCase
 {
@@ -23,7 +24,8 @@ class PackagerTest extends TestCase
     {
         $expectedMessage = 'Provide version number' . PHP_EOL;
         $messageOutputter = new EchoMessageOutputter();
-        $packager = new Packager(new FileReaderWriter(), $messageOutputter);
+        $pConfig = new PackagerConfiguration();
+        $packager = new Packager(new FileReaderWriter(), $messageOutputter, $pConfig);
 
         $packager->build();
         $this->assertEquals($expectedMessage, $messageOutputter->getLastMessage());

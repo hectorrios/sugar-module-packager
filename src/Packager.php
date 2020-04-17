@@ -19,32 +19,35 @@ class Packager
     /* @var MessageOutputter $messageOutputter */
     private $messageOutputter;
 
-    protected $release_directory = 'releases';
-    protected $prefix_release_package = 'module_';
-    protected $config_directory = 'configuration';
-    protected $config_template_file = 'templates.php';
-    protected $config_installdefs_file = 'installdefs.php';
-    protected $src_directory = 'src';
-    protected $pkg_directory = 'pkg';
-    protected $manifest_file = 'manifest.php';
+    /* @var PackagerConfiguration $config */
+    private $config;
 
-    protected $files_to_remove_from_zip = array(
-        '.DS_Store',
-        '.gitkeep'
-    );
-
-    protected  $files_to_remove_from_manifest_copy = array(
-        'LICENSE',
-        'LICENSE.txt',
-        'README.txt'
-    );
-
-    protected $installdefs_keys_to_remove_from_manifest_copy = array(
-        'pre_execute',
-        'post_execute',
-        'pre_uninstall',
-        'post_uninstall'
-    );
+//    protected $release_directory = 'releases';
+//    protected $prefix_release_package = 'module_';
+//    protected $config_directory = 'configuration';
+//    protected $config_template_file = 'templates.php';
+//    protected $config_installdefs_file = 'installdefs.php';
+//    protected $src_directory = 'src';
+//    protected $pkg_directory = 'pkg';
+//    protected $manifest_file = 'manifest.php';
+//
+//    protected $files_to_remove_from_zip = array(
+//        '.DS_Store',
+//        '.gitkeep'
+//    );
+//
+//    protected  $files_to_remove_from_manifest_copy = array(
+//        'LICENSE',
+//        'LICENSE.txt',
+//        'README.txt'
+//    );
+//
+//    protected $installdefs_keys_to_remove_from_manifest_copy = array(
+//        'pre_execute',
+//        'post_execute',
+//        'pre_uninstall',
+//        'post_uninstall'
+//    );
 
     protected $manifest_default_install_version_string = "array('^8.[\d]+.[\d]+$')";
     protected $manifest_default_author = 'Enrico Simonetti';
@@ -53,11 +56,14 @@ class Packager
      * Packager constructor.
      * @param FileReaderWriter $readerWriter
      * @param MessageOutputter $msgOutputter
+     * @param PackagerConfiguration $config
      */
-    public function __construct(FileReaderWriter $readerWriter, MessageOutputter $msgOutputter)
+    public function __construct(FileReaderWriter $readerWriter, MessageOutputter $msgOutputter,
+                                PackagerConfiguration $config)
     {
         $this->fileReaderWriterService = $readerWriter;
         $this->messageOutputter = $msgOutputter;
+        $this->config = $config;
     }
 
     private function getSoftwareVersionNumber()
@@ -77,16 +83,16 @@ class Packager
 
     protected function getZipName($package_name = '')
     {
-        return $this->release_directory . DIRECTORY_SEPARATOR .
+        return $this->config->getReleaseDirectory() . DIRECTORY_SEPARATOR .
             $this->prefix_release_package . $package_name . '.zip';
     }
 
     protected function createAllDirectories()
     {
-        $this->fileReaderWriterService->createDirectory($this->release_directory);
-        $this->fileReaderWriterService->createDirectory($this->config_directory);
-        $this->fileReaderWriterService->createDirectory($this->src_directory);
-        $this->fileReaderWriterService->createDirectory($this->pkg_directory);
+        $this->fileReaderWriterService->createDirectory($this->config->getReleaseDirectory());
+        $this->fileReaderWriterService->createDirectory($this->config->getConfigDirectory());
+        $this->fileReaderWriterService->createDirectory($this->config->getSrcDirectory());
+        $this->fileReaderWriterService->createDirectory($this->config->getPkgDirectory());
     }
 
     protected function buildSimplePath($directory = '', $file = '')
@@ -115,7 +121,7 @@ class Packager
             foreach ($files_iterator as $name => $file) {
                 if ($file->isFile()) {
                     $file_realpath = $file->getRealPath();
-                    if (!in_array($file->getFilename(), $this->files_to_remove_from_zip)) {
+                    if (!in_array($file->getFilename(), $this->config->getFilesToRemoveFromZip())) {
                         $file_relative = '' . str_replace($path . '/', '', $file_realpath);
                         $result[$file_relative] = $file_realpath;
                     }
@@ -127,7 +133,7 @@ class Packager
 
     protected function wipePkgDirectory()
     {
-        $pkg_files = $this->getDirectoryContentIterator($this->pkg_directory);
+        $pkg_files = $this->getDirectoryContentIterator($this->config->getPkgDirectory());
 
         if (!empty($pkg_files)) {
             foreach ($pkg_files as $pkg_file) {
@@ -152,7 +158,7 @@ class Packager
             'type' => 'module',
         );
 
-        if (file_exists($this->buildSimplePath($this->config_directory, $this->manifest_file))) {
+        if (file_exists($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()))) {
             require($this->buildSimplePath($this->config_directory, $this->manifest_file));
             $manifest = array_replace_recursive($manifest_base, $manifest);
         } else {
@@ -175,7 +181,8 @@ class Packager
             empty($manifest['author']) ||
             empty($manifest['acceptable_sugar_versions']['regex_matches']) ) {
             $this->messageOutputter->message('Please fill in the required details on your ' .
-                $this->buildSimplePath($this->config_directory, $this->manifest_file)  . ' file.');
+                $this->buildSimplePath($this->config->getConfigDirectory(),
+                    $this->config->getManifestFile())  . ' file.');
             // some problem... return empty manifest
             return array();
         }
@@ -193,9 +200,10 @@ class Packager
             $installdefs_original['id'] = $manifest['id'];
         }
 
-        if (is_dir($this->config_directory) &&
-            file_exists($this->buildSimplePath($this->config_directory, $this->config_installdefs_file))) {
-            require($this->buildSimplePath($this->config_directory, $this->config_installdefs_file));
+        if (is_dir($this->config->getConfigDirectory()) &&
+            file_exists($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getConfigInstalldefsFile()))) {
+            require($this->buildSimplePath($this->config->getConfigDirectory(),
+                $this->config->getConfigInstalldefsFile()));
         }
 
         if (!empty($module_files_list)) {
@@ -239,13 +247,15 @@ class Packager
     protected function copySrcIntoPkg()
     {
         // copy into pkg all src files
-        $common_files_list = $this->getModuleFiles($this->src_directory);
+        $common_files_list = $this->getModuleFiles($this->config->getSrcDirectory());
         if (!empty($common_files_list)) {
             foreach ($common_files_list as $file_relative => $file_realpath) {
-                $destination_directory = $this->pkg_directory . DIRECTORY_SEPARATOR . dirname($file_relative) . DIRECTORY_SEPARATOR;
+                $destination_directory = $this->config->getPkgDirectory() . DIRECTORY_SEPARATOR .
+                    dirname($file_relative) . DIRECTORY_SEPARATOR;
 
                 $this->fileReaderWriterService->createDirectory($destination_directory);
-                $this->fileReaderWriterService->copyFile($file_realpath, $destination_directory . basename($file_realpath));
+                $this->fileReaderWriterService->copyFile($file_realpath,
+                    $destination_directory . basename($file_realpath));
             }
         }
     }
