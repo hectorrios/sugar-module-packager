@@ -142,6 +142,11 @@ class Packager
         }
     }
 
+    /**
+     * @param string $version
+     * @return array The manifest contents
+     * @throws ManifestIncompleteException
+     */
     protected function getManifest($version = '')
     {
         $manifest = array();
@@ -180,11 +185,12 @@ class Packager
             empty($manifest['version']) ||
             empty($manifest['author']) ||
             empty($manifest['acceptable_sugar_versions']['regex_matches']) ) {
-            $this->messageOutputter->message('Please fill in the required details on your ' .
+
+            throw new ManifestIncompleteException('Please fill in the required details on your ' .
                 $this->buildSimplePath($this->config->getConfigDirectory(),
                     $this->config->getManifestFile())  . ' file.');
             // some problem... return empty manifest
-            return array();
+           // return array();
         }
 
         return $manifest;
@@ -299,6 +305,10 @@ class Packager
         $this->messageOutputter->message($this->getSoftwareInfo() . ' successfully packaged ' . $zipFile);
     }
 
+    /**
+     * @param string $version
+     * @throws ManifestIncompleteException
+     */
     public function build($version = '')
     {
         if (empty($version)) {
@@ -307,7 +317,11 @@ class Packager
         }
 
         $this->createAllDirectories();
-        $manifest = $this->getManifest($version);
+        try {
+            $manifest = $this->getManifest($version);
+        } catch (ManifestIncompleteException $e) {
+            throw $e;
+        }
 
         if (empty($manifest)) {
             //TODO Display a message?
