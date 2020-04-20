@@ -2,10 +2,12 @@
 
 namespace SugarModulePackager\Test;
 
+use InvalidArgumentException;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use PHPUnit\Framework\TestCase;
 use SugarModulePackager\FileReaderWriter;
+use SugarModulePackager\PackagerConfiguration;
 
 class FileReaderWriterTest extends TestCase
 {
@@ -27,12 +29,82 @@ class FileReaderWriterTest extends TestCase
         $this->assertTrue($this->rootDir->hasChild($dir));
     }
 
+    public function testCreateDirectoryWithoutBaseDir()
+    {
+        $readerWriter = new FileReaderWriter();
+        $dir = 'releases';
+        $this->assertFalse($this->rootDir->hasChild($dir));
+        $dirPath = vfsStream::url('exampleDir' . DIRECTORY_SEPARATOR . $dir);
+        $readerWriter->createDirectory($dirPath);
+        $this->assertTrue($this->rootDir->hasChild($dir));
+    }
+
     public function testWriteFile()
     {
         $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
         $readerWriter->writeFile('sample_write.php',
             'Sample Content');
         $this->assertTrue($this->rootDir->hasChild('sample_write.php'));
+    }
+
+    public function testWriteFileWithinExistingNestedDirectories()
+    {
+        $config = new PackagerConfiguration('0.0.1');
+
+        $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
+
+        $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
+            "\$manifest['built_in_version'] = '';".PHP_EOL.
+            "\$manifest['name'] = '';".PHP_EOL.
+            "\$manifest['description'] = '';".PHP_EOL.
+            "\$manifest['author'] = 'Sugar Partner';" . PHP_EOL .
+            "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
+            $config->getManifestDefaultInstallVersionString() .";";
+
+        $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
+        $readerWriter->createDirectory($config->getConfigDirectory());
+        $readerWriter->writeFile($config->getConfigDirectory() . DIRECTORY_SEPARATOR .
+        $config->getManifestFile(), $manifestContent);
+
+        $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
+        $this->assertTrue($this->rootDir->hasChild($config->getConfigDirectory() . DIRECTORY_SEPARATOR .
+            $config->getManifestFile()));
+    }
+
+    public function testWriteFileWithinNonExistingNestedDirectories()
+    {
+        $config = new PackagerConfiguration('0.0.1');
+
+        $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
+
+        $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
+            "\$manifest['built_in_version'] = '';".PHP_EOL.
+            "\$manifest['name'] = '';".PHP_EOL.
+            "\$manifest['description'] = '';".PHP_EOL.
+            "\$manifest['author'] = 'Sugar Partner';" . PHP_EOL .
+            "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
+            $config->getManifestDefaultInstallVersionString() .";";
+
+        $readerWriter = new FileReaderWriter();
+
+        $filePath = vfsStream::url('exampleDir' .
+            DIRECTORY_SEPARATOR . $config->getConfigDirectory() . DIRECTORY_SEPARATOR .
+            $config->getManifestFile());
+
+        $dirPart = dirname($filePath);
+
+        $this->assertDirectoryNotExists($dirPart);
+
+        //create it
+        //$readerWriter->createDirectory($dirPart);
+
+        //$this->assertDirectoryExists($dirPart);
+
+        $this->expectException(InvalidArgumentException::class);
+        //$readerWriter->createDirectory($config->getConfigDirectory());
+        $readerWriter->writeFile( $filePath, $manifestContent);
+
+        $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
     }
 
     public function testReadFile()
