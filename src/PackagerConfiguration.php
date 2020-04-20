@@ -4,6 +4,9 @@
 namespace SugarModulePackager;
 
 
+use ArgumentCountError;
+use InvalidArgumentException;
+
 class PackagerConfiguration
 {
     /* @var string $packageRootDir */
@@ -36,12 +39,27 @@ class PackagerConfiguration
         'post_uninstall'
     );
 
+
+    private $manifest_default_install_version_string = "array('^8.[\d]+.[\d]+$')";
+    private $manifest_default_author = 'Enrico Simonetti';
+
+    /* @var string */
+    private $version;
+
+
     /**
      * PackagerConfiguration constructor.
+     * @param $version
      * @param string $packageRootDir
+     * @throws InvalidArgumentException
      */
-    public function __construct($packageRootDir = '')
+    public function __construct($version, $packageRootDir = '')
     {
+        if (empty($version)) {
+            throw new ArgumentCountError('the $version parameter must be provided');
+            //throw new InvalidArgumentException('the $version parameter must be provided');
+        }
+        $this->version = $version;
         $this->packageRootDir = $packageRootDir;
     }
 
@@ -108,6 +126,31 @@ class PackagerConfiguration
     {
         return $this->config_installdefs_file;
     }
+
+    /**
+     * @return string
+     */
+    public function getManifestDefaultAuthor()
+    {
+        return $this->manifest_default_author;
+    }
+
+    /**
+     * @return string
+     */
+    public function getManifestDefaultInstallVersionString()
+    {
+        return $this->manifest_default_install_version_string;
+    }
+
+    /**
+     * @return string
+     */
+    public function getVersion()
+    {
+        return $this->version;
+    }
+
 
 
 }
