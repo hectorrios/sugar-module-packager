@@ -4,6 +4,8 @@
 namespace SugarModulePackager;
 
 
+use InvalidArgumentException;
+
 class FileReaderWriter
 {
 
@@ -19,12 +21,33 @@ class FileReaderWriter
         $this->baseDirectory = $baseDirectory;
     }
 
-    public function writeFile($filename = '', $content = '')
+    /**
+     * writes the contents provided to the named file. If
+     * the file does not exist then it will be created. If the
+     * filename represents a path with directories, then the assumption is
+     * that the directories should already exist. If they don't then an error will
+     * be thrown. InvalidArgumentException is thrown if the filename provided
+     * is not given or is the empty string. Additionally, it is also thrown if
+     * directories present in the path don't already exist.
+     *
+     * @param string $filename
+     * @param string $content
+     * @throws InvalidArgumentException
+     */
+    public function writeFile($filename, $content = '')
     {
-        if (!empty($filename)) {
-            $filename = $this->constructPathWithBase($filename);
-            file_put_contents($filename, $content);
+        if (empty($filename)) {
+            throw new InvalidArgumentException('filename cannot be empty');
         }
+
+        $filename = $this->constructPathWithBase($filename);
+        $dirPart = dirname($filename);
+        if (!file_exists($dirPart)) {
+            throw new InvalidArgumentException('the portion of the path: ' .
+            $dirPart . ' does  not exist');
+        }
+
+        file_put_contents($filename, $content);
     }
 
     public function readFile($filename = '')
@@ -77,5 +100,7 @@ class FileReaderWriter
 
         return $fullPath;
     }
+
+
 
 }
