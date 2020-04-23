@@ -8,6 +8,7 @@ use org\bovigo\vfs\vfsStreamDirectory;
 use PHPUnit\Framework\TestCase;
 use SugarModulePackager\FileReaderWriterImpl;
 use SugarModulePackager\PackagerConfiguration;
+use SugarModulePackager\Test\Mocks\ReaderWriterTestDecorator;
 
 class FileReaderWriterImplTest extends TestCase
 {
@@ -156,6 +157,72 @@ class FileReaderWriterImplTest extends TestCase
         $readerWriter = new FileReaderWriterImpl();
         //resolve the path of this current file
         $absPath = $readerWriter->resolvePath('tests' . DIRECTORY_SEPARATOR . 'FileReaderWriterImplTest.php');
-        $this->assertEquals(__FILE__, $absPath);
+        $this->assertEquals('tests' . DIRECTORY_SEPARATOR . 'FileReaderWriterImplTest.php', $absPath);
     }
+
+    public function testGetFilesFromDirectorySimpleOneDirectory()
+    {
+        //Create the src directory structure with just the custom folder
+        $structure = array(
+            'src' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                'WOM2Api.php' => '<?php echo "Hello";',
+                                '.gitkeep' => 'this should be ignored',
+                                'file_to_ignore.txt' => 'this should also be ignored',
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        );
+
+        vfsStream::create($structure);
+        //echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
+        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
+
+        $srcDir = vfsStream::url('exampleDir/src');
+        $readerWriter->addPathMapping($srcDir, $srcDir);
+
+        $files = $readerWriter->getFilesFromDirectory($srcDir,
+            '.gitkeep', 'file_to_ignore.txt');
+        $this->assertCount(1, $files);
+        $expectedFilePath = 'custom/clients/base/api/WOM2Api.php';
+        $this->assertTrue(array_key_exists($expectedFilePath, $files));
+    }
+
+    public function testGetFilesFromDirectoryWithEmptySource()
+    {
+        //Create the src directory structure with just the custom folder
+        $structure = array(
+            'src' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                '.gitkeep' => 'this should be ignored',
+                                'file_to_ignore.txt' => 'this should also be ignored',
+                            ),
+                        ),
+                    ),
+                ),
+                '.gitkeep' => 'ignore my gitkeep file',
+            ),
+        );
+
+        vfsStream::create($structure);
+        //echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
+        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
+
+        $srcDir = vfsStream::url('exampleDir/src');
+        $readerWriter->addPathMapping($srcDir, $srcDir);
+
+        $files = $readerWriter->getFilesFromDirectory($srcDir,
+            '.gitkeep', 'file_to_ignore.txt');
+
+        $this->assertCount(0, $files);
+    }
+
 }

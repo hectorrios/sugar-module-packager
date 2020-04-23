@@ -7,9 +7,12 @@ namespace SugarModulePackager;
 use InvalidArgumentException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use SplFileInfo;
 
 class FileReaderWriterImpl implements ReaderWriter
 {
+
+    use DirectoryContentIterator;
 
     /* @var string */
     private $baseDirectory;
@@ -105,7 +108,14 @@ class FileReaderWriterImpl implements ReaderWriter
 
     public function resolvePath($path = '')
     {
-        return realpath($path);
+        echo 'FileReaderWriterImpl.resolvePath being called!!!' . PHP_EOL;
+        $resolvedPath = '';
+        if (file_exists($path)) {
+            return $path;
+        }
+        $resolvedPath = realpath($path);
+
+        return $resolvedPath;
     }
 
     public function copyDirectory($srcDir, $destDir, ...$filesToExclude)
@@ -133,11 +143,13 @@ class FileReaderWriterImpl implements ReaderWriter
             throw new InvalidArgumentException('the src directory must be a string');
         }
 
-        $files_iterator = $this->getDirectoryContentIterator($srcDir);
+        $resolvedSourceDirectory = $this->resolvePath($srcDir);
+
+        $files_iterator = $this->getDirectoryContentIterator($resolvedSourceDirectory);
         $result = array();
         //$path = realpath($path);
 
-        if (empty($files_iterator) || empty($srcDirectory)) {
+        if (empty($files_iterator) || empty($srcDir)) {
             return $result;
         }
 
@@ -151,7 +163,7 @@ class FileReaderWriterImpl implements ReaderWriter
                     continue;
                 }
 
-                $file_relative = '' . str_replace($srcDirectory . '/', '', $file_realpath);
+                $file_relative = '' . str_replace($srcDir . '/', '', $file_realpath);
 //                echo 'The file relative value is: ' . $file_relative . PHP_EOL;
                 $result[$file_relative] = $file_realpath;
             }
@@ -159,19 +171,5 @@ class FileReaderWriterImpl implements ReaderWriter
 
         return $result;
     }
-
-    /**
-     * @param $path
-     * @return RecursiveIteratorIterator
-     */
-    protected function getDirectoryContentIterator($path)
-    {
-        return new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($this->resolvePath($path),
-                RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::LEAVES_ONLY
-        );
-    }
-
 
 }
