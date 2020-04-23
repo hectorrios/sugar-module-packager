@@ -6,10 +6,10 @@ use InvalidArgumentException;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use PHPUnit\Framework\TestCase;
-use SugarModulePackager\FileReaderWriter;
+use SugarModulePackager\FileReaderWriterImpl;
 use SugarModulePackager\PackagerConfiguration;
 
-class FileReaderWriterTest extends TestCase
+class FileReaderWriterImplTest extends TestCase
 {
     /* @var vfsStreamDirectory */
     private $rootDir;
@@ -21,7 +21,7 @@ class FileReaderWriterTest extends TestCase
 
     public function testCreateDirectory()
     {
-        $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
+        $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
         $dir = 'releases';
         $this->assertFalse($this->rootDir->hasChild($dir));
         //$readerWriter->createDirectory($dir);
@@ -31,7 +31,7 @@ class FileReaderWriterTest extends TestCase
 
     public function testCreateDirectoryWithoutBaseDir()
     {
-        $readerWriter = new FileReaderWriter();
+        $readerWriter = new FileReaderWriterImpl();
         $dir = 'releases';
         $this->assertFalse($this->rootDir->hasChild($dir));
         $dirPath = vfsStream::url('exampleDir' . DIRECTORY_SEPARATOR . $dir);
@@ -41,7 +41,7 @@ class FileReaderWriterTest extends TestCase
 
     public function testWriteFile()
     {
-        $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
+        $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
         $readerWriter->writeFile('sample_write.php',
             'Sample Content');
         $this->assertTrue($this->rootDir->hasChild('sample_write.php'));
@@ -61,7 +61,7 @@ class FileReaderWriterTest extends TestCase
             "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
             $config->getManifestDefaultInstallVersionString() .";";
 
-        $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
+        $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
         $readerWriter->createDirectory($config->getConfigDirectory());
         $readerWriter->writeFile($config->getConfigDirectory() . DIRECTORY_SEPARATOR .
         $config->getManifestFile(), $manifestContent);
@@ -85,7 +85,7 @@ class FileReaderWriterTest extends TestCase
             "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
             $config->getManifestDefaultInstallVersionString() .";";
 
-        $readerWriter = new FileReaderWriter();
+        $readerWriter = new FileReaderWriterImpl();
 
         $filePath = vfsStream::url('exampleDir' .
             DIRECTORY_SEPARATOR . $config->getConfigDirectory() . DIRECTORY_SEPARATOR .
@@ -109,7 +109,7 @@ class FileReaderWriterTest extends TestCase
 
     public function testReadFile()
     {
-        $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
+        $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
         $expectedContent = 'Sample Content';
         $readerWriter->writeFile('sample_write.php',
             $expectedContent);
@@ -122,7 +122,7 @@ class FileReaderWriterTest extends TestCase
 
     public function testReadFileWithNonExistentFile()
     {
-        $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
+        $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
         $contents = $readerWriter->readFile('non_existing.php');
         $this->assertEquals('', $contents);
     }
@@ -130,7 +130,7 @@ class FileReaderWriterTest extends TestCase
     public function testCopyFileWithBaseDirProvided()
     {
 
-        $readerWriter = new FileReaderWriter(vfsStream::url('exampleDir'));
+        $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
         $expectedContent = 'Sample Content';
         $readerWriter->writeFile('sample_write.php',
             $expectedContent);
@@ -141,7 +141,7 @@ class FileReaderWriterTest extends TestCase
 
     public function testCopyFileWithoutBaseDirProvided()
     {
-        $readerWriter = new FileReaderWriter();
+        $readerWriter = new FileReaderWriterImpl();
         $expectedContent = 'Sample Content';
         $readerWriter->writeFile(
             vfsStream::url('exampleDir' . DIRECTORY_SEPARATOR . 'sample_write_3.php'),
@@ -149,5 +149,13 @@ class FileReaderWriterTest extends TestCase
         $readerWriter->copyFile(vfsStream::url('exampleDir' . DIRECTORY_SEPARATOR . 'sample_write_3.php'),
             vfsStream::url('exampleDir' .  DIRECTORY_SEPARATOR . 'sample_write_3_copy.php'));
         $this->assertTrue($this->rootDir->hasChild('sample_write_3_copy.php'));
+    }
+
+    public function testResolvePath()
+    {
+        $readerWriter = new FileReaderWriterImpl();
+        //resolve the path of this current file
+        $absPath = $readerWriter->resolvePath('tests' . DIRECTORY_SEPARATOR . 'FileReaderWriterImplTest.php');
+        $this->assertEquals(__FILE__, $absPath);
     }
 }

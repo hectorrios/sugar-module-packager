@@ -5,15 +5,17 @@ namespace SugarModulePackager;
 
 
 use InvalidArgumentException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
-class FileReaderWriter
+class FileReaderWriterImpl implements ReaderWriter
 {
 
     /* @var string */
     private $baseDirectory;
 
     /**
-     * FileReaderWriter constructor.
+     * FileReaderWriterImpl constructor.
      * @param string $baseDirectory
      */
     public function __construct($baseDirectory = '')
@@ -101,6 +103,75 @@ class FileReaderWriter
         return $fullPath;
     }
 
+    public function resolvePath($path = '')
+    {
+        return realpath($path);
+    }
+
+    public function copyDirectory($srcDir, $destDir, ...$filesToExclude)
+    {
+        $common_files_list = $this->getFilesFromDirectory($srcDir);
+        if (!empty($common_files_list)) {
+            foreach ($common_files_list as $file_relative => $file_realpath) {
+                $destination_directory = $destDir . DIRECTORY_SEPARATOR .
+                    dirname($file_relative) . DIRECTORY_SEPARATOR;
+
+                $this->createDirectory($destination_directory);
+                $this->copyFile($file_realpath,
+                    $destination_directory . basename($file_realpath));
+            }
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getFilesFromDirectory($srcDir, ...$filesToExclude)
+    {
+        //a check for the possible case that resolving the path may have produced False
+        if ($srcDir === false) {
+            throw new InvalidArgumentException('the src directory must be a string');
+        }
+
+        $files_iterator = $this->getDirectoryContentIterator($srcDir);
+        $result = array();
+        //$path = realpath($path);
+
+        if (empty($files_iterator) || empty($srcDirectory)) {
+            return $result;
+        }
+
+        /* @var SplFileInfo $file */
+        foreach ($files_iterator as $name => $file) {
+            if ($file->isFile()) {
+//                $file_realpath = $file->getRealPath();
+                $file_realpath = $file->getPathname();
+
+                if (in_array($file->getFilename(), $filesToExclude)) {
+                    continue;
+                }
+
+                $file_relative = '' . str_replace($srcDirectory . '/', '', $file_realpath);
+//                echo 'The file relative value is: ' . $file_relative . PHP_EOL;
+                $result[$file_relative] = $file_realpath;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param $path
+     * @return RecursiveIteratorIterator
+     */
+    protected function getDirectoryContentIterator($path)
+    {
+        return new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($this->resolvePath($path),
+                RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::LEAVES_ONLY
+        );
+    }
 
 
 }
