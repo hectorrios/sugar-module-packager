@@ -302,7 +302,7 @@ class PackagerService
 
     /**
      * @param array $manifest existing skeleton manifest
-     * @param array $installDefs loaded installdefs plus any custom installdefs
+     * @param array $installdefs loaded installdefs plus any custom installdefs
      * @return string containing the final complete manifest array
      */
     public function buildFinalManifest(array $manifest, array $installdefs)
