@@ -108,7 +108,6 @@ class FileReaderWriterImpl implements ReaderWriter
 
     public function resolvePath($path = '')
     {
-        echo 'FileReaderWriterImpl.resolvePath being called!!!' . PHP_EOL;
         $resolvedPath = '';
         if (file_exists($path)) {
             return $path;
@@ -164,7 +163,6 @@ class FileReaderWriterImpl implements ReaderWriter
                 }
 
                 $file_relative = '' . str_replace($srcDir . '/', '', $file_realpath);
-//                echo 'The file relative value is: ' . $file_relative . PHP_EOL;
                 $result[$file_relative] = $file_realpath;
             }
         }

@@ -152,12 +152,27 @@ class FileReaderWriterImplTest extends TestCase
         $this->assertTrue($this->rootDir->hasChild('sample_write_3_copy.php'));
     }
 
-    public function testResolvePath()
+    public function testResolvePathUsingRealRelativePath()
     {
         $readerWriter = new FileReaderWriterImpl();
         //resolve the path of this current file
         $absPath = $readerWriter->resolvePath('tests' . DIRECTORY_SEPARATOR . 'FileReaderWriterImplTest.php');
         $this->assertEquals('tests' . DIRECTORY_SEPARATOR . 'FileReaderWriterImplTest.php', $absPath);
+    }
+
+    public function testResolvePathUsingStreamJustDir()
+    {
+        $readerWriter = new FileReaderWriterImpl();//Create the src directory structure with just the custom folder
+        $structure = array(
+            'src' => array(),
+            'pkg' => array(),
+        );
+
+        vfsStream::create($structure);
+
+        //resolve the path of the "pkg" directory
+        $absPath = $readerWriter->resolvePath(vfsStream::url('exampleDir/pkg'));
+        $this->assertEquals(vfsStream::url('exampleDir/pkg'), $absPath);
     }
 
     public function testGetFilesFromDirectorySimpleOneDirectory()
