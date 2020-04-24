@@ -391,10 +391,179 @@ foreach($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key 
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Accounts/Ext/clients/base/views/record/remove_copy.php'));
     }
 
-    public function testBuildUpInstallDefsNoCustomInstallDefs()
+    public function testBuildUpInstallDefsWithNoCustomInstallDefs()
     {
+        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
+        $pService = new PackagerService($readerWriter);
 
+        $templates['template1'] = array(
+            'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
+            'modules' => array(
+                'Contacts' => 'Contact',
+                'Accounts' => 'Account',
+                'Cases' => 'Case',
+                'Opportunities' => 'Opportunity',
+            )
+        );
+
+        $structure = array(
+            'src' => array(
+            ),
+            'pkg' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                'WOM2Api.php' => '<?php echo "Hello";',
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            'configuration' => array(
+                'manifest.php' => '<?php echo "my manifest file";',
+            ),
+        );
+
+        vfsStream::create($structure);
+
+        $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url('exampleDir/pkg'));
+
+        $finalInstallDefs = $pService->buildUpInstallDefs($fileList, 'my_id_001', new MockMessageOutputter(),'',
+            function($file_relative, $installDefs) {
+            return true;
+            }
+        );
+
+        $this->assertIsArray($finalInstallDefs);
+        $this->assertArrayHasKey('copy', $finalInstallDefs);
+        $this->assertCount(1, $finalInstallDefs);
     }
 
+    public function testBuildUpInstallDefsWithCustomInstallDefs()
+    {
+        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
+        $pService = new PackagerService($readerWriter);
+
+        $structure = array(
+            'src' => array(
+            ),
+            'pkg' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                'WOM2Api.php' => '<?php echo "Hello";',
+                            ),
+                        ),
+                    ),
+                ),
+                'modules' => array(
+                    'Packages' => array(
+                      'Packages.php' => '<?php echo \'Hello\'',
+                    ),
+                ),
+            ),
+            'configuration' => array(
+                'manifest.php' => '<?php echo "my manifest file";',
+                'installdefs.php' => '<?php
+
+$installdefs[\'beans\'] = array (
+    0 =>
+        array (
+            \'module\' => \'Packages\',
+            \'class\' => \'Packages\',
+            \'path\' => \'modules/Packages/Packages.php\',
+            \'tab\' => false,
+        ),
+);',
+            ),
+        );
+
+        vfsStream::create($structure);
+
+
+        $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url('exampleDir/pkg'));
+
+        $finalInstallDefs = $pService->buildUpInstallDefs($fileList, 'my_id_001', new MockMessageOutputter(),
+            vfsStream::url('exampleDir/configuration/installdefs.php'),
+            function($file_relative, $installDefs) {
+                return true;
+            }
+        );
+
+        $this->assertIsArray($finalInstallDefs);
+        $this->assertArrayHasKey('copy', $finalInstallDefs);
+        $this->assertCount(2, $finalInstallDefs);
+        //echo print_r($finalInstallDefs, true);
+    }
+
+    public function testBuildFinalManifestWithEmptyManifestBase()
+    {
+        $installdefsLocal = array();
+        $installdefsLocal['beans'] = array (
+            0 =>
+                array (
+                    'module' => 'ToothbrushSettings',
+                    'class' => 'ToothbrushSettings',
+                    'path' => 'modules/ToothbrushSettings/ToothbrushSettings.php',
+                    'tab' => false,
+                ),
+        );
+
+        $installdefsLocal['language'] = array (
+            0 =>
+                array (
+                    'from' => '<basepath>/Language/en_us.lang.php',
+                    'to_module' => 'application',
+                    'language' => 'en_us',
+                ),
+        );
+
+        $installdefsLocal['image_dir'] = '<basepath>/icons';
+        $installdefsLocal['copy'] = array(
+            array(
+                'from' => '<basepath>/custom/clients/base/api/WOM2Api.php',
+                'to' => 'custom/clients/base/api/WOM2Api.php',
+            ),
+            array (
+                'from' => '<basepath>/modules/Packages/Packages.php',
+                'to' => 'modules/Packages/Packages.php'
+            ),
+        );
+
+        $manifestLocal = array();
+        $manifestLocal['id'] = 'dummy package';
+        $manifestLocal['built_in_version'] = '9.0';
+        $manifestLocal['name'] = 'dummy_utility';
+        $manifestLocal['description'] = 'does nothing';
+        $manifestLocal['author'] = 'phpunit';
+        $manifestLocal['acceptable_sugar_versions']['regex_matches'] = array('^9.[\d]+.[\d]+$');
+
+        $readerWriter = new FileReaderWriterImpl();
+        $pService = new PackagerService($readerWriter);
+        $output = $pService->buildFinalManifest($manifestLocal, $installdefsLocal);
+
+        $this->assertIsString($output);
+        $this->assertNotEmpty($output);
+//        echo $output . PHP_EOL;
+        $manifest = array();
+        $installdefs = array();
+        //Now let's write it out to file and then include it to make some assertions on the contents
+        $readerWriter->writeFile(vfsStream::url('exampleDir/myManifest.php'), $output);
+//        unset($manifest);
+        require(vfsStream::url('exampleDir/myManifest.php'));
+        $this->assertTrue($this->rootDir->hasChild('myManifest.php'));
+        $this->assertIsArray($manifest);
+        $this->assertIsArray($installdefs);
+        $this->assertNotEmpty($manifest);
+        $this->assertNotEmpty($installdefs);
+
+        $this->assertArrayHasKey('copy', $installdefs);
+        $this->assertCount(2, $installdefs['copy']);
+        $this->assertArrayHasKey('beans', $installdefs);
+        $this->assertCount(1, $installdefs['beans']);
+        $this->assertCount(4, $installdefs['beans'][0]);
+    }
 
 }
