@@ -10,6 +10,7 @@ use SugarModulePackager\FileReaderWriterImpl;
 use SugarModulePackager\ManifestIncompleteException;
 use SugarModulePackager\Packager;
 use SugarModulePackager\PackagerConfiguration;
+use SugarModulePackager\PackagerService;
 use SugarModulePackager\Test\Mocks\MockMessageOutputter;
 
 class PackagerTest extends TestCase
@@ -28,7 +29,8 @@ class PackagerTest extends TestCase
         $messageOutputter = new MockMessageOutputter();
         $pConfig = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
             Packager::SW_VERSION);
-        $packager = new Packager(new FileReaderWriterImpl(), $messageOutputter, $pConfig);
+        $pService = new PackagerService(new FileReaderWriterImpl());
+        $packager = new Packager($pService, $messageOutputter, $pConfig);
 
         $packager->build();
         $this->assertEquals($expectedMessage, $messageOutputter->getLastMessage());
@@ -37,11 +39,12 @@ class PackagerTest extends TestCase
     public function testBuildThrowsManifestIncompleteExceptionWhenNoManifestExists()
     {
 
-        $messageOutputter = new EchoMessageOutputter();
+        $messageOutputter = new MockMessageOutputter();
         $pConfig = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
             Packager::SW_VERSION);
         $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
-        $packager = new Packager($readerWriter, $messageOutputter, $pConfig);
+        $pService = new PackagerService($readerWriter);
+        $packager = new Packager($pService, $messageOutputter, $pConfig);
 
         $this->expectException(ManifestIncompleteException::class);
         $packager->build('0.0.1');
