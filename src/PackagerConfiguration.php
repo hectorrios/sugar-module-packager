@@ -207,6 +207,14 @@ class PackagerConfiguration
         return $this->installdefs_keys_to_remove_from_manifest_copy;
     }
 
+    /**
+     * @return string[]
+     */
+    public function getFilesToRemoveFromManifestCopy()
+    {
+        return $this->files_to_remove_from_manifest_copy;
+    }
+
 
 
 }
