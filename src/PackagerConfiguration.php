@@ -191,4 +191,14 @@ class PackagerConfiguration
         return $this->getSoftwareName() . ' v' . $this->getSoftwareVersion();
     }
 
+    /**
+     * @return string
+     */
+    public function getPrefixReleasePackage()
+    {
+        return $this->prefix_release_package;
+    }
+
+
+
 }
