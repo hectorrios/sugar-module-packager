@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
+use ZipArchive;
 
 class PackagerService
 {
@@ -222,51 +223,43 @@ class PackagerService
         }
     }
 
-    public function generateZipPackage(array $manifest, $zipFile, MessageOutputter $messenger,
-                                       array $pkgDirFiles, array $installDefs, PackagerConfiguration $config)
+    /**
+     * @param string $manifestContent the contents of the completely built manifest
+     * @param string $zipFile full-path and name of the zip file to be generated
+     * @param MessageOutputter $messenger
+     * @param array $pkgDirFiles files from the "pkg" directory
+     * @param PackagerConfiguration $config
+     * @param ZipArchive $archiver
+     */
+    public function generateZipPackage($manifestContent, $zipFile, MessageOutputter $messenger,
+                                       array $pkgDirFiles, PackagerConfiguration $config, ZipArchive $archiver)
     {
         $messenger->message('Creating ' . $zipFile . '...');
-        $zip = new ZipArchive();
-        $zip->open($zipFile, ZipArchive::CREATE);
+//        $zip = new ZipArchive();
+        $archiver->open($zipFile, ZipArchive::CREATE);
 
         // add all pkg dir files to zip
         if (!empty($pkgDirFiles)) {
             foreach ($pkgDirFiles as $file_relative => $file_realpath) {
-                $zip->addFile($file_realpath, $file_relative);
+                $archiver->addFile($file_realpath, $file_relative);
             }
         }
 
-        //$installdefs = $this->getInstallDefs($manifest, $module_files_list);
-
-        if (!empty($installdefs['copy'])) {
-            $installdefs_copy = $installdefs['copy'];
-            unset($installdefs['copy']);
-        } else {
-            $installdefs_copy = array();
-        }
-
-        $manifestContent = sprintf(
-            "<?php\n\n\$manifest = %s;\n\n\$installdefs = %s;\n\n\$installdefs['copy'] = %s;\n",
-            var_export($manifest, true),
-            var_export($installdefs, true),
-            preg_replace('(\s+\d+\s=>)', '', var_export($installdefs_copy, true))
-        );
-
         // adding the file as well, for reference purpose only
-        $this->fileReaderWriterService->writeFile($this->buildSimplePath($config->getPkgDirectory(),
-            $config->getManifestFile()), $manifestContent);
-        $zip->addFromString($config->getManifestFile(), $manifestContent);
-        $zip->close();
+        $pkgDirPath = $this->fileReaderWriterService->resolvePath($config->getPkgDirectory());
+        $this->fileReaderWriterService->writeFile($pkgDirPath .
+            DIRECTORY_SEPARATOR . $config->getManifestFile(), $manifestContent);
+        $archiver->addFromString($config->getManifestFile(), $manifestContent);
+        $archiver->close();
 
         $messenger->message($config->getSoftwareInfo() . ' successfully packaged ' . $zipFile);
-
     }
 
     /**
      * @inheritDoc
      */
     public function buildUpInstallDefs($fileList, $id, MessageOutputter $messenger,
-                                       $customInstallDefFilePath = '', Callable $shouldAddToManifestCopy)
+                                       Callable $shouldAddToManifestCopy, $customInstalldefFilePath = '')
     {
         $installdefs = array();
         $installdefs_original = array();
@@ -276,8 +269,8 @@ class PackagerService
             $installdefs_original['id'] = $manifest['id'];
         }
 
-        if (!empty($customInstallDefFilePath) && file_exists($customInstallDefFilePath)) {
-            require($customInstallDefFilePath);
+        if (!empty($customInstalldefFilePath) && file_exists($customInstalldefFilePath)) {
+            require($customInstalldefFilePath);
         }
 
         if (!empty($fileList)) {
@@ -323,7 +316,7 @@ class PackagerService
 
     }
 
-    protected function buildSimplePath($directory = '', $file = '')
+    protected function buildSimplePathRedundant($directory = '', $file = '')
     {
         $path = '';
         if (!empty($directory) && !empty($file)) {
