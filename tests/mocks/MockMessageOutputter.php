@@ -12,6 +12,27 @@ class MockMessageOutputter implements MessageOutputter
     /* @var array $messages */
     private $messages = array();
 
+    /* @var bool $enableEcho */
+    private $enableEcho = false;
+
+    /**
+     *
+     */
+    public function toggleEnableEcho()
+    {
+        $this->enableEcho = !$this->enableEcho;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isEnableEcho()
+    {
+        return $this->enableEcho;
+    }
+
+
+
     public function message($out = '')
     {
         if (empty($out)) {
@@ -20,6 +41,9 @@ class MockMessageOutputter implements MessageOutputter
 
         $formattedMessage = $out . PHP_EOL;
         $this->messages[] = $formattedMessage;
+        if ($this->enableEcho) {
+            echo $formattedMessage;
+        }
     }
 
     public function getLastMessage()
