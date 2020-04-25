@@ -15,6 +15,10 @@ class FileReaderWriterImplTest extends TestCase
     /* @var vfsStreamDirectory */
     private $rootDir;
 
+    private $softwareName = 'SugarModulePackager';
+
+    private $softwareVersion = '0.2.2';
+
     public function setUp()
     {
        $this->rootDir = vfsStream::setup("exampleDir");
@@ -50,7 +54,7 @@ class FileReaderWriterImplTest extends TestCase
 
     public function testWriteFileWithinExistingNestedDirectories()
     {
-        $config = new PackagerConfiguration('0.0.1');
+        $config = new PackagerConfiguration('0.0.1', $this->softwareName, $this->softwareVersion);
 
         $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
 
@@ -74,7 +78,7 @@ class FileReaderWriterImplTest extends TestCase
 
     public function testWriteFileWithinNonExistingNestedDirectories()
     {
-        $config = new PackagerConfiguration('0.0.1');
+        $config = new PackagerConfiguration('0.0.1', $this->softwareName, $this->softwareVersion);
 
         $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
 
