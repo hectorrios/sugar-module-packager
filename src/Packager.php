@@ -13,9 +13,6 @@ class Packager
     const SW_VERSION = '0.2.2';
     const SW_NAME = 'SugarModulePackager';
 
-    /* @var FileReaderWriterImpl $fileReaderWriterService */
-    private $fileReaderWriterService;
-
     /* @var MessageOutputter $messageOutputter */
     private $messageOutputter;
 
@@ -30,17 +27,18 @@ class Packager
 
     /**
      * Packager constructor.
-     * @param FileReaderWriterImpl $readerWriter
+     * @param PackagerService $packagerService
      * @param MessageOutputter $msgOutputter
      * @param PackagerConfiguration $config
      */
-    public function __construct(FileReaderWriterImpl $readerWriter, MessageOutputter $msgOutputter,
+    public function __construct(PackagerService $packagerService,
+                                MessageOutputter $msgOutputter,
                                 PackagerConfiguration $config)
     {
-        $this->fileReaderWriterService = $readerWriter;
+//        $this->fileReaderWriterService = $readerWriter;
         $this->messageOutputter = $msgOutputter;
-        $config->setSoftwareVersion(self::SW_VERSION);
         $this->config = $config;
+        $this->packagerService = $packagerService;
     }
 
     private function getSoftwareVersionNumber()
@@ -61,16 +59,16 @@ class Packager
     protected function getZipName($package_name = '')
     {
         return $this->config->getReleaseDirectory() . DIRECTORY_SEPARATOR .
-            $this->prefix_release_package . $package_name . '.zip';
+            $this->config->getPrefixReleasePackage() . $package_name . '.zip';
     }
 
-    protected function createAllDirectories()
-    {
-        $this->fileReaderWriterService->createDirectory($this->config->getReleaseDirectory());
-        $this->fileReaderWriterService->createDirectory($this->config->getConfigDirectory());
-        $this->fileReaderWriterService->createDirectory($this->config->getSrcDirectory());
-        $this->fileReaderWriterService->createDirectory($this->config->getPkgDirectory());
-    }
+//    protected function createAllDirectories()
+//    {
+//        $this->fileReaderWriterService->createDirectory($this->config->getReleaseDirectory());
+//        $this->fileReaderWriterService->createDirectory($this->config->getConfigDirectory());
+//        $this->fileReaderWriterService->createDirectory($this->config->getSrcDirectory());
+//        $this->fileReaderWriterService->createDirectory($this->config->getPkgDirectory());
+//    }
 
     protected function buildSimplePath($directory = '', $file = '')
     {
@@ -121,119 +119,58 @@ class Packager
 
     /**
      * @param string $version
-     * @return array|mixed
-     * @throws ManifestIncompleteException
-     */
-    protected function getManifestRefactor($version = '')
-    {
-        $manifest = array();
-        if (empty($version)) {
-            return $manifest;
-        }
-
-        // check existence of manifest template
-        $manifest_base = array(
-            'version' => $version,
-            'is_uninstallable' => true,
-            'published_date' => date('Y-m-d H:i:s'),
-            'type' => 'module',
-        );
-
-        $manifestFilePath = $this->buildSimplePath($this->config->getConfigDirectory(),
-            $this->config->getManifestFile());
-        try {
-            $manifest = $this->packagerService->getManifestFileContents($manifestFilePath);
-        } catch (ManifestIncompleteException $e) {
-            //File was not found. TODO Consider creating a FileNotFoundException for this
-            //Create sample manifest and then re-throw the exception
-            // create sample empty manifest file
-            $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
-                "\$manifest['built_in_version'] = '';".PHP_EOL.
-                "\$manifest['name'] = '';".PHP_EOL.
-                "\$manifest['description'] = '';".PHP_EOL.
-                "\$manifest['author'] = '".$this->manifest_default_author."';".PHP_EOL.
-                "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".$this->manifest_default_install_version_string.";";
-
-            $this->fileReaderWriterService->writeFile($this->buildSimplePath($this->config->getConfigDirectory(),
-                $this->config->getManifestFile()), $manifestContent);
-            throw $e;
-        }
-
-        //Now what? Let's merge our base with the contents of the file
-        $manifest = array_replace_recursive($manifest_base, $manifest);
-
-        //Validate that we have everything that we need in our built up Manifest
-        if ( empty($manifest['id']) ||
-            empty($manifest['built_in_version']) ||
-            empty($manifest['name']) ||
-            empty($manifest['version']) ||
-            empty($manifest['author']) ||
-            empty($manifest['acceptable_sugar_versions']['regex_matches']) ) {
-
-            throw new ManifestIncompleteException('Please fill in the required details on your ' .
-                $this->buildSimplePath($this->config->getConfigDirectory(),
-                    $this->config->getManifestFile())  . ' file.');
-            // some problem... return empty manifest
-            // return array();
-        }
-
-        return $manifest;
-    }
-
-    /**
-     * @param string $version
      * @return array The manifest contents
      * @throws ManifestIncompleteException
      */
-    protected function getManifest($version = '')
-    {
-        $manifest = array();
-        if (empty($version)) {
-            return $manifest;
-        }
-
-
-        // check existence of manifest template
-        $manifest_base = array(
-            'version' => $version,
-            'is_uninstallable' => true,
-            'published_date' => date('Y-m-d H:i:s'),
-            'type' => 'module',
-        );
-
-        if (file_exists($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()))) {
-            require($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()));
-            $manifest = array_replace_recursive($manifest_base, $manifest);
-        } else {
-            // create sample empty manifest file
-            $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
-                "\$manifest['built_in_version'] = '';".PHP_EOL.
-                "\$manifest['name'] = '';".PHP_EOL.
-                "\$manifest['description'] = '';".PHP_EOL.
-                "\$manifest['author'] = '".$this->manifest_default_author."';".PHP_EOL.
-                "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".$this->manifest_default_install_version_string.";";
-
-            $this->fileReaderWriterService->writeFile(
-                $this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()),
-                $manifestContent);
-        }
-
-        if ( empty($manifest['id']) ||
-            empty($manifest['built_in_version']) ||
-            empty($manifest['name']) ||
-            empty($manifest['version']) ||
-            empty($manifest['author']) ||
-            empty($manifest['acceptable_sugar_versions']['regex_matches']) ) {
-
-            throw new ManifestIncompleteException('Please fill in the required details on your ' .
-                $this->buildSimplePath($this->config->getConfigDirectory(),
-                    $this->config->getManifestFile())  . ' file.');
+//    protected function getManifest($version = '')
+//    {
+//        $manifest = array();
+//        if (empty($version)) {
+//            return $manifest;
+//        }
+//
+//
+         //check existence of manifest template
+//        $manifest_base = array(
+//            'version' => $version,
+//            'is_uninstallable' => true,
+//            'published_date' => date('Y-m-d H:i:s'),
+//            'type' => 'module',
+//        );
+//
+//        if (file_exists($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()))) {
+//            require($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()));
+//            $manifest = array_replace_recursive($manifest_base, $manifest);
+//        } else {
+             //create sample empty manifest file
+//            $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
+//                "\$manifest['built_in_version'] = '';".PHP_EOL.
+//                "\$manifest['name'] = '';".PHP_EOL.
+//                "\$manifest['description'] = '';".PHP_EOL.
+//                "\$manifest['author'] = '".$this->manifest_default_author."';".PHP_EOL.
+//                "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".$this->manifest_default_install_version_string.";";
+//
+//            $this->fileReaderWriterService->writeFile(
+//                $this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()),
+//                $manifestContent);
+//        }
+//
+//        if ( empty($manifest['id']) ||
+//            empty($manifest['built_in_version']) ||
+//            empty($manifest['name']) ||
+//            empty($manifest['version']) ||
+//            empty($manifest['author']) ||
+//            empty($manifest['acceptable_sugar_versions']['regex_matches']) ) {
+//
+//            throw new ManifestIncompleteException('Please fill in the required details on your ' .
+//                $this->buildSimplePath($this->config->getConfigDirectory(),
+//                    $this->config->getManifestFile())  . ' file.');
             // some problem... return empty manifest
            // return array();
-        }
-
-        return $manifest;
-    }
+//        }
+//
+//        return $manifest;
+//    }
 
     protected function getInstallDefs($manifest, $module_files_list)
     {
@@ -272,9 +209,9 @@ class Packager
 
     protected function shouldAddToManifestCopy($file_relative, $custom_installdefs)
     {
-        if (!in_array(basename($file_relative), $this->files_to_remove_from_manifest_copy)) {
+        if (!in_array(basename($file_relative), $this->config->getFilesToRemoveFromManifestCopy())) {
             // check and dont copy all *_execute and *_uninstall installdefs keyword files
-            foreach ($this->installdefs_keys_to_remove_from_manifest_copy as $to_remove) {
+            foreach ($this->config->getInstalldefsKeysToRemoveFromManifestCopy() as $to_remove) {
                 if (!empty($custom_installdefs[$to_remove])) {
                     foreach ($custom_installdefs[$to_remove] as $manifest_file_copy) {
                         // found matching relative file as one of the *_execute or *_uninstall scripts
@@ -291,6 +228,8 @@ class Packager
 
     protected function copySrcIntoPkg()
     {
+        //TODO: simplify this by deferring to the copyDirectory method in ReaderWriter
+
         // copy into pkg all src files
         $common_files_list = $this->getModuleFiles($this->config->getSrcDirectory());
         if (!empty($common_files_list)) {
@@ -298,51 +237,53 @@ class Packager
                 $destination_directory = $this->config->getPkgDirectory() . DIRECTORY_SEPARATOR .
                     dirname($file_relative) . DIRECTORY_SEPARATOR;
 
-                $this->fileReaderWriterService->createDirectory($destination_directory);
-                $this->fileReaderWriterService->copyFile($file_realpath,
-                    $destination_directory . basename($file_realpath));
+                $this->packagerService->getFileReaderWriterService()
+                    ->createDirectory($destination_directory);
+                $this->packagerService->getFileReaderWriterService()
+                    ->copyFile($file_realpath,
+                        $destination_directory . basename($file_realpath));
             }
         }
     }
 
-    protected function generateZipPackage($manifest, $zipFile)
-    {
-        $this->messageOutputter->message('Creating ' . $zipFile . '...');
-        $zip = new ZipArchive();
-        $zip->open($zipFile, ZipArchive::CREATE);
-
+//    protected function generateZipPackage($manifest, $zipFile)
+//    {
+//        $this->messageOutputter->message('Creating ' . $zipFile . '...');
+//        $zip = new ZipArchive();
+//        $zip->open($zipFile, ZipArchive::CREATE);
+//
         // add all files to zip
-        $module_files_list = $this->getModuleFiles($this->config->getPkgDirectory());
-        if (!empty($module_files_list)) {
-            foreach ($module_files_list as $file_relative => $file_realpath) {
-                $zip->addFile($file_realpath, $file_relative);
-            }
-        }
-
-        $installdefs = $this->getInstallDefs($manifest, $module_files_list);
-
-        if (!empty($installdefs['copy'])) {
-            $installdefs_copy = $installdefs['copy'];
-            unset($installdefs['copy']);
-        } else {
-            $installdefs_copy = array();
-        }
-
-        $manifestContent = sprintf(
-            "<?php\n\n\$manifest = %s;\n\n\$installdefs = %s;\n\n\$installdefs['copy'] = %s;\n",
-            var_export($manifest, true),
-            var_export($installdefs, true),
-            preg_replace('(\s+\d+\s=>)', '', var_export($installdefs_copy, true))
-        );
-
+//        $module_files_list = $this->getModuleFiles($this->config->getPkgDirectory());
+//        if (!empty($module_files_list)) {
+//            foreach ($module_files_list as $file_relative => $file_realpath) {
+//                $zip->addFile($file_realpath, $file_relative);
+//            }
+//        }
+//
+//        $installdefs = $this->getInstallDefs($manifest, $module_files_list);
+//
+//        if (!empty($installdefs['copy'])) {
+//            $installdefs_copy = $installdefs['copy'];
+//            unset($installdefs['copy']);
+//        } else {
+//            $installdefs_copy = array();
+//        }
+//
+//        $manifestContent = sprintf(
+//            "<?php\n\n\$manifest = %s;\n\n\$installdefs = %s;\n\n\$installdefs['copy'] = %s;\n",
+//            var_export($manifest, true),
+//            var_export($installdefs, true),
+//            preg_replace('(\s+\d+\s=>)', '', var_export($installdefs_copy, true))
+//        );
+//
         // adding the file as well, for reference purpose only
-        $this->fileReaderWriterService->writeFile($this->buildSimplePath($this->config->getPkgDirectory(),
-            $this->config->getManifestFile()), $manifestContent);
-        $zip->addFromString($this->config->getManifestFile(), $manifestContent);
-        $zip->close();
-
-        $this->messageOutputter->message($this->getSoftwareInfo() . ' successfully packaged ' . $zipFile);
-    }
+//        $this->fileReaderWriterService->writeFile($this->buildSimplePath($this->config->getPkgDirectory(),
+//            $this->config->getManifestFile()), $manifestContent);
+//        $zip->addFromString($this->config->getManifestFile(), $manifestContent);
+//        $zip->close();
+//
+//        $this->messageOutputter->message($this->getSoftwareInfo() . ' successfully packaged ' . $zipFile);
+//    }
 
     /**
      * @param string $version
@@ -380,49 +321,49 @@ class Packager
         $this->generateZipPackage($manifest, $zip);
     }
 
-    protected function generateTemplatedConfiguredFiles()
-    {
-        if (is_dir($this->config_directory) &&
-            file_exists($this->buildSimplePath($this->config_directory, $this->config_template_file))) {
-
-            require($this->buildSimplePath($this->config_directory, $this->config_template_file));
-
-            if (!empty($templates)) {
-                foreach ($templates as $template_src_directory => $template_values) {
-                    if (is_dir(realpath($template_src_directory)) &&
-                        !empty($template_values['directory_pattern']) && !empty($template_values['modules'])) {
-                        $template_dst_directory = $template_values['directory_pattern'];
-                        $modules = $template_values['modules'];
+//    protected function generateTemplatedConfiguredFiles()
+//    {
+//        if (is_dir($this->config_directory) &&
+//            file_exists($this->buildSimplePath($this->config_directory, $this->config_template_file))) {
+//
+//            require($this->buildSimplePath($this->config_directory, $this->config_template_file));
+//
+//            if (!empty($templates)) {
+//                foreach ($templates as $template_src_directory => $template_values) {
+//                    if (is_dir(realpath($template_src_directory)) &&
+//                        !empty($template_values['directory_pattern']) && !empty($template_values['modules'])) {
+//                        $template_dst_directory = $template_values['directory_pattern'];
+//                        $modules = $template_values['modules'];
 
                         // generate runtime files based on the templates
-                        $template_files_list = $this->getModuleFiles($template_src_directory);
-                        if (!empty($template_files_list)) {
-                            $template_dst_directory = str_replace('/', DIRECTORY_SEPARATOR, $template_dst_directory);
+//                        $template_files_list = $this->getModuleFiles($template_src_directory);
+//                        if (!empty($template_files_list)) {
+//                            $template_dst_directory = str_replace('/', DIRECTORY_SEPARATOR, $template_dst_directory);
 
-                            foreach ($modules as $module => $object) {
-                                $this->messageOutputter->message('* Generating template files for module: ' . $module);
+//                            foreach ($modules as $module => $object) {
+//                                $this->messageOutputter->message('* Generating template files for module: ' . $module);
                                 // replace "modulename" from path
-                                $current_module_destination = str_replace('{MODULENAME}', $module, $template_dst_directory);
-                                foreach ($template_files_list as $file_relative => $file_realpath) {
+//                                $current_module_destination = str_replace('{MODULENAME}', $module, $template_dst_directory);
+//                                foreach ($template_files_list as $file_relative => $file_realpath) {
                                     // build destination
-                                    $destination_directory = $this->pkg_directory . DIRECTORY_SEPARATOR . $current_module_destination .
-                                        DIRECTORY_SEPARATOR . dirname($file_relative) . DIRECTORY_SEPARATOR;
-                                    $this->messageOutputter->message('* Generating '.$destination_directory . basename($file_relative));
-
-                                    $this->fileReaderWriterService->createDirectory($destination_directory);
-                                    $this->fileReaderWriterService->copyFile($file_realpath, $destination_directory . basename($file_relative));
+//                                    $destination_directory = $this->pkg_directory . DIRECTORY_SEPARATOR . $current_module_destination .
+//                                        DIRECTORY_SEPARATOR . dirname($file_relative) . DIRECTORY_SEPARATOR;
+//                                    $this->messageOutputter->message('* Generating '.$destination_directory . basename($file_relative));
+//
+//                                    $this->fileReaderWriterService->createDirectory($destination_directory);
+//                                    $this->fileReaderWriterService->copyFile($file_realpath, $destination_directory . basename($file_relative));
 
                                     // modify content
-                                    $content = $this->fileReaderWriterService->readFile($destination_directory . basename($file_relative));
-                                    $content = str_replace('{MODULENAME}', $module, $content);
-                                    $content = str_replace('{OBJECTNAME}', $object, $content);
-                                    $this->fileReaderWriterService->writeFile($destination_directory . basename($file_relative), $content);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+//                                    $content = $this->fileReaderWriterService->readFile($destination_directory . basename($file_relative));
+//                                    $content = str_replace('{MODULENAME}', $module, $content);
+//                                    $content = str_replace('{OBJECTNAME}', $object, $content);
+//                                    $this->fileReaderWriterService->writeFile($destination_directory . basename($file_relative), $content);
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
 }
