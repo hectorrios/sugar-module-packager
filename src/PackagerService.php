@@ -316,6 +316,15 @@ class PackagerService
 
     }
 
+    /**
+     * @return ReaderWriter
+     */
+    public function getFileReaderWriterService()
+    {
+        return $this->fileReaderWriterService;
+    }
+
+
     protected function buildSimplePathRedundant($directory = '', $file = '')
     {
         $path = '';
