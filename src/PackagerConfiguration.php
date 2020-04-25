@@ -3,8 +3,6 @@
 
 namespace SugarModulePackager;
 
-
-use ArgumentCountError;
 use InvalidArgumentException;
 
 class PackagerConfiguration
@@ -46,21 +44,26 @@ class PackagerConfiguration
     /* @var string */
     private $version;
 
+    /* @var string $softwareversion */
+    private $softwareVersion;
+
+    /* @var string $softwareName */
+    private $softwareName;
+
 
     /**
      * PackagerConfiguration constructor.
-     * @param $version
+     * @param string $version
+     * @param string $softwareName
+     * @param string $softwareVersion
      * @param string $packageRootDir
-     * @throws InvalidArgumentException
      */
-    public function __construct($version, $packageRootDir = '')
+    public function __construct($version, $softwareName, $softwareVersion, $packageRootDir = '')
     {
-        if (empty($version)) {
-            throw new ArgumentCountError('the $version parameter must be provided');
-            //throw new InvalidArgumentException('the $version parameter must be provided');
-        }
         $this->version = $version;
         $this->packageRootDir = $packageRootDir;
+        $this->softwareName = $softwareName;
+        $this->softwareVersion = $softwareVersion;
     }
 
     /**
@@ -151,6 +154,41 @@ class PackagerConfiguration
         return $this->version;
     }
 
+    /**
+     * @return string
+     */
+    public function getSoftwareVersion()
+    {
+        return $this->softwareVersion;
+    }
 
+    /**
+     * @param string $softwareVersion
+     */
+    public function setSoftwareVersion($softwareVersion)
+    {
+        $this->softwareVersion = $softwareVersion;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSoftwareName()
+    {
+        return $this->softwareName;
+    }
+
+    /**
+     * @param string $softwareName
+     */
+    public function setSoftwareName($softwareName)
+    {
+        $this->softwareName = $softwareName;
+    }
+
+    public function getSoftwareInfo()
+    {
+        return $this->getSoftwareName() . ' v' . $this->getSoftwareVersion();
+    }
 
 }

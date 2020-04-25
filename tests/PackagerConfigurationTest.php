@@ -10,8 +10,10 @@ class PackagerConfigurationTest extends TestCase
 
     public function test__construct()
     {
-        $config = new PackagerConfiguration('0.0.1');
+        $config = new PackagerConfiguration('0.0.1', 'SugarPackager', '0.2.2');
         $this->assertEquals('0.0.1', $config->getVersion());
+        $info = 'SugarPackager v0.2.2';
+        $this->assertEquals($info, $config->getSoftwareInfo());
     }
 
 }
