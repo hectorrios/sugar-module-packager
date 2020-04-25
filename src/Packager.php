@@ -13,7 +13,7 @@ class Packager
     const SW_VERSION = '0.2.2';
     const SW_NAME = 'SugarModulePackager';
 
-    /* @var FileReaderWriter $fileReaderWriterService */
+    /* @var FileReaderWriterImpl $fileReaderWriterService */
     private $fileReaderWriterService;
 
     /* @var MessageOutputter $messageOutputter */
@@ -22,47 +22,24 @@ class Packager
     /* @var PackagerConfiguration $config */
     private $config;
 
-//    protected $release_directory = 'releases';
-//    protected $prefix_release_package = 'module_';
-//    protected $config_directory = 'configuration';
-//    protected $config_template_file = 'templates.php';
-//    protected $config_installdefs_file = 'installdefs.php';
-//    protected $src_directory = 'src';
-//    protected $pkg_directory = 'pkg';
-//    protected $manifest_file = 'manifest.php';
-//
-//    protected $files_to_remove_from_zip = array(
-//        '.DS_Store',
-//        '.gitkeep'
-//    );
-//
-//    protected  $files_to_remove_from_manifest_copy = array(
-//        'LICENSE',
-//        'LICENSE.txt',
-//        'README.txt'
-//    );
-//
-//    protected $installdefs_keys_to_remove_from_manifest_copy = array(
-//        'pre_execute',
-//        'post_execute',
-//        'pre_uninstall',
-//        'post_uninstall'
-//    );
+    /* @var PackagerStepper $packagerService */
+    private $packagerService;
 
     protected $manifest_default_install_version_string = "array('^8.[\d]+.[\d]+$')";
     protected $manifest_default_author = 'Enrico Simonetti';
 
     /**
      * Packager constructor.
-     * @param FileReaderWriter $readerWriter
+     * @param FileReaderWriterImpl $readerWriter
      * @param MessageOutputter $msgOutputter
      * @param PackagerConfiguration $config
      */
-    public function __construct(FileReaderWriter $readerWriter, MessageOutputter $msgOutputter,
+    public function __construct(FileReaderWriterImpl $readerWriter, MessageOutputter $msgOutputter,
                                 PackagerConfiguration $config)
     {
         $this->fileReaderWriterService = $readerWriter;
         $this->messageOutputter = $msgOutputter;
+        $config->setSoftwareVersion(self::SW_VERSION);
         $this->config = $config;
     }
 
@@ -144,6 +121,67 @@ class Packager
 
     /**
      * @param string $version
+     * @return array|mixed
+     * @throws ManifestIncompleteException
+     */
+    protected function getManifestRefactor($version = '')
+    {
+        $manifest = array();
+        if (empty($version)) {
+            return $manifest;
+        }
+
+        // check existence of manifest template
+        $manifest_base = array(
+            'version' => $version,
+            'is_uninstallable' => true,
+            'published_date' => date('Y-m-d H:i:s'),
+            'type' => 'module',
+        );
+
+        $manifestFilePath = $this->buildSimplePath($this->config->getConfigDirectory(),
+            $this->config->getManifestFile());
+        try {
+            $manifest = $this->packagerService->getManifestFileContents($manifestFilePath);
+        } catch (ManifestIncompleteException $e) {
+            //File was not found. TODO Consider creating a FileNotFoundException for this
+            //Create sample manifest and then re-throw the exception
+            // create sample empty manifest file
+            $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
+                "\$manifest['built_in_version'] = '';".PHP_EOL.
+                "\$manifest['name'] = '';".PHP_EOL.
+                "\$manifest['description'] = '';".PHP_EOL.
+                "\$manifest['author'] = '".$this->manifest_default_author."';".PHP_EOL.
+                "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".$this->manifest_default_install_version_string.";";
+
+            $this->fileReaderWriterService->writeFile($this->buildSimplePath($this->config->getConfigDirectory(),
+                $this->config->getManifestFile()), $manifestContent);
+            throw $e;
+        }
+
+        //Now what? Let's merge our base with the contents of the file
+        $manifest = array_replace_recursive($manifest_base, $manifest);
+
+        //Validate that we have everything that we need in our built up Manifest
+        if ( empty($manifest['id']) ||
+            empty($manifest['built_in_version']) ||
+            empty($manifest['name']) ||
+            empty($manifest['version']) ||
+            empty($manifest['author']) ||
+            empty($manifest['acceptable_sugar_versions']['regex_matches']) ) {
+
+            throw new ManifestIncompleteException('Please fill in the required details on your ' .
+                $this->buildSimplePath($this->config->getConfigDirectory(),
+                    $this->config->getManifestFile())  . ' file.');
+            // some problem... return empty manifest
+            // return array();
+        }
+
+        return $manifest;
+    }
+
+    /**
+     * @param string $version
      * @return array The manifest contents
      * @throws ManifestIncompleteException
      */
@@ -164,7 +202,7 @@ class Packager
         );
 
         if (file_exists($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()))) {
-            require($this->buildSimplePath($this->config_directory, $this->manifest_file));
+            require($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()));
             $manifest = array_replace_recursive($manifest_base, $manifest);
         } else {
             // create sample empty manifest file
@@ -175,7 +213,8 @@ class Packager
                 "\$manifest['author'] = '".$this->manifest_default_author."';".PHP_EOL.
                 "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".$this->manifest_default_install_version_string.";";
 
-            $this->fileReaderWriterService->writeFile($this->buildSimplePath($this->config_directory, $this->manifest_file),
+            $this->fileReaderWriterService->writeFile(
+                $this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getManifestFile()),
                 $manifestContent);
         }
 
