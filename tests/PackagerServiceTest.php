@@ -18,7 +18,11 @@ class PackagerServiceTest extends TestCase
     /* @var vfsStreamDirectory */
     private $rootDir;
 
-    private $rootDirName = 'exampleDir';
+    private $rootDirName = 'root';
+
+    private $softwareName = 'SugarModulePackager';
+
+    private $softwareVersion = '0.2.3';
 
     protected function setUp()
     {
@@ -40,7 +44,7 @@ class PackagerServiceTest extends TestCase
 
     public function testGetManifestFileContentsWithBareMinimum()
     {
-        $config = new PackagerConfiguration("0.0.1");
+        $config = new PackagerConfiguration("0.0.1", $this->softwareName, $this->softwareVersion);
 
         $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
         //Create a base template lacking all of the main thing
@@ -198,12 +202,12 @@ class PackagerServiceTest extends TestCase
         vfsStream::create($structure);
 //        echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
 
-        $config = $pService->loadTemplateConfiguration(vfsStream::url('exampleDir/configuration/templates.php'));
+        $config = $pService->loadTemplateConfiguration(vfsStream::url($this->rootDirName . '/configuration/templates.php'));
 
         $this->assertNull($config);
         $structureAfter = vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure();
-        $this->assertTrue(array_key_exists('src', $structureAfter['exampleDir']));
-        $this->assertTrue(empty($structureAfter['exampleDir']['src']));
+        $this->assertArrayHasKey('src', $structureAfter[$this->rootDirName]);
+        $this->assertTrue(empty($structureAfter[$this->rootDirName]['src']));
     }
 
     public function testLoadTemplateConfigurationWithExistingTemplateConfigButIncorrect()
@@ -224,7 +228,7 @@ class PackagerServiceTest extends TestCase
 
         vfsStream::create($structure);
 
-        $config = $pService->loadTemplateConfiguration(vfsStream::url('exampleDir/configuration/templates.php'));
+        $config = $pService->loadTemplateConfiguration(vfsStream::url($this->rootDirName . '/configuration/templates.php'));
         $this->assertNull($config);
     }
 
@@ -246,7 +250,7 @@ class PackagerServiceTest extends TestCase
 
         vfsStream::create($structure);
 
-        $config = $pService->loadTemplateConfiguration(vfsStream::url('exampleDir/configuration/templates.php'));
+        $config = $pService->loadTemplateConfiguration(vfsStream::url($this->rootDirName . '/configuration/templates.php'));
         $this->assertNull($config);
     }
 
@@ -278,9 +282,9 @@ class PackagerServiceTest extends TestCase
         );
 
         vfsStream::create($structure);
-        $readerWriter->addPathMapping('template1', vfsStream::url('exampleDir/template1'));
+        $readerWriter->addPathMapping('template1', vfsStream::url($this->rootDirName . '/template1'));
 
-        $config = $pService->loadTemplateConfiguration(vfsStream::url('exampleDir/configuration/templates.php'));
+        $config = $pService->loadTemplateConfiguration(vfsStream::url($this->rootDirName . '/configuration/templates.php'));
 
         $this->assertNotNull($config);
         $this->assertIsArray($config);
@@ -315,7 +319,8 @@ class PackagerServiceTest extends TestCase
 
         vfsStream::create($structure);
         $messenger = new MockMessageOutputter();
-        $pService->generateTemplatedConfiguredFiles($templates, $messenger, vfsStream::url('exampleDir/pkg'));
+        $pService->generateTemplatedConfiguredFiles($templates, $messenger,
+            vfsStream::url($this->rootDirName . '/pkg'));
         $this->assertFalse($this->rootDir->hasChild('src/custom/Extension'));
         $this->assertEquals('The template1 was not found.' . PHP_EOL, $messenger->getLastMessage());
     }
@@ -372,12 +377,13 @@ foreach($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key 
         vfsStream::create($structure);
 
         $readerWriter->addPathMapping('template1',
-            vfsStream::url('exampleDir/template1'));
-        $readerWriter->addPathMapping(vfsStream::url('exampleDir/template1'),
-            vfsStream::url('exampleDir/template1'));
+            vfsStream::url($this->rootDirName . '/template1'));
+        $readerWriter->addPathMapping(vfsStream::url($this->rootDirName . '/template1'),
+            vfsStream::url($this->rootDirName . '/template1'));
 
         $messenger = new MockMessageOutputter();
-        $pService->generateTemplatedConfiguredFiles($templates, $messenger, vfsStream::url('exampleDir/pkg'));
+        $pService->generateTemplatedConfiguredFiles($templates, $messenger,
+            vfsStream::url($this->rootDirName . '/pkg'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension'));
 //        echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Accounts'));
@@ -427,11 +433,11 @@ foreach($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key 
 
         vfsStream::create($structure);
 
-        $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url('exampleDir/pkg'));
+        $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url($this->rootDirName . '/pkg'));
 
-        $finalInstallDefs = $pService->buildUpInstallDefs($fileList, 'my_id_001', new MockMessageOutputter(),'',
+        $finalInstallDefs = $pService->buildUpInstallDefs($fileList, 'my_id_001', new MockMessageOutputter(),
             function($file_relative, $installDefs) {
-            return true;
+                return true;
             }
         );
 
@@ -483,13 +489,13 @@ $installdefs[\'beans\'] = array (
         vfsStream::create($structure);
 
 
-        $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url('exampleDir/pkg'));
+        $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url($this->rootDirName . '/pkg'));
 
         $finalInstallDefs = $pService->buildUpInstallDefs($fileList, 'my_id_001', new MockMessageOutputter(),
-            vfsStream::url('exampleDir/configuration/installdefs.php'),
             function($file_relative, $installDefs) {
                 return true;
-            }
+            },
+            vfsStream::url($this->rootDirName . '/configuration/installdefs.php')
         );
 
         $this->assertIsArray($finalInstallDefs);
@@ -550,9 +556,9 @@ $installdefs[\'beans\'] = array (
         $manifest = array();
         $installdefs = array();
         //Now let's write it out to file and then include it to make some assertions on the contents
-        $readerWriter->writeFile(vfsStream::url('exampleDir/myManifest.php'), $output);
+        $readerWriter->writeFile(vfsStream::url($this->rootDirName . '/myManifest.php'), $output);
 //        unset($manifest);
-        require(vfsStream::url('exampleDir/myManifest.php'));
+        require(vfsStream::url($this->rootDirName . '/myManifest.php'));
         $this->assertTrue($this->rootDir->hasChild('myManifest.php'));
         $this->assertIsArray($manifest);
         $this->assertIsArray($installdefs);
@@ -566,4 +572,128 @@ $installdefs[\'beans\'] = array (
         $this->assertCount(4, $installdefs['beans'][0]);
     }
 
+    public function testGenerateZipPackage()
+    {
+        $structure = array(
+            '/' => array(
+                'tmp' => array(
+                ),
+            ),
+            'src' => array(
+            ),
+            'releases' => array(),
+            'pkg' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                'WOM2Api.php' => '<?php echo "Hello";',
+                            ),
+                        ),
+                    ),
+                ),
+                'modules' => array(
+                    'Packages' => array(
+                        'Packages.php' => '<?php echo \'Hello\'',
+                    ),
+                ),
+            ),
+            'configuration' => array(
+                'manifest.php' => '<?php echo "my manifest file";',
+                'installdefs.php' => '<?php
+
+$installdefs[\'beans\'] = array (
+    0 =>
+        array (
+            \'module\' => \'Packages\',
+            \'class\' => \'Packages\',
+            \'path\' => \'modules/Packages/Packages.php\',
+            \'tab\' => false,
+        ),
+);',
+            ),
+        );
+
+        vfsStream::create($structure);
+
+        $this->assertTrue($this->rootDir->hasChild('releases'));
+
+        $manifestLocal = array();
+        $manifestLocal['id'] = 'dummy package';
+        $manifestLocal['built_in_version'] = '9.0';
+        $manifestLocal['name'] = 'dummy_utility';
+        $manifestLocal['description'] = 'does nothing';
+        $manifestLocal['author'] = 'phpunit';
+        $manifestLocal['acceptable_sugar_versions']['regex_matches'] = array('^9.[\d]+.[\d]+$');
+
+        $installdefsLocal['language'] = array (
+            0 =>
+                array (
+                    'from' => '<basepath>/Language/en_us.lang.php',
+                    'to_module' => 'application',
+                    'language' => 'en_us',
+                ),
+        );
+
+        $installdefsLocal['image_dir'] = '<basepath>/icons';
+        $installdefsLocal['copy'] = array(
+            array(
+                'from' => '<basepath>/custom/clients/base/api/WOM2Api.php',
+                'to' => 'custom/clients/base/api/WOM2Api.php',
+            ),
+            array (
+                'from' => '<basepath>/modules/Packages/Packages.php',
+                'to' => 'modules/Packages/Packages.php'
+            ),
+        );
+
+        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
+        $readerWriter->addPathMapping('pkg', vfsStream::url($this->rootDirName . '/pkg'));
+
+        $listOfFiles = $readerWriter->getFilesFromDirectory(vfsStream::url($this->rootDirName . '/pkg'));
+        echo print_r($listOfFiles, true) . PHP_EOL;
+        $this->assertCount(2, $listOfFiles);
+
+        $manifestContent = $this->constructSampleFinalManifest($installdefsLocal, $manifestLocal);
+
+        $config = new PackagerConfiguration('v0.0.1', $this->softwareName, $this->softwareVersion);
+        $pService = new PackagerService($readerWriter);
+        $messenger = new MockMessageOutputter();
+        $messenger->toggleEnableEcho();
+
+        $archiver = $this->getMockBuilder("\ZipArchive")->getMock();
+        $archiver->expects($this->exactly(2))
+            ->method('addFile');
+
+        $archiver->expects($this->once())
+            ->method('open');
+        $archiver->expects($this->once())
+            ->method('close')
+            ->will($this->returnValue(
+                $readerWriter->writeFile(vfsStream::url($this->rootDirName . '/releases/test_001.zip'))));
+
+        $pService->generateZipPackage($manifestContent, vfsStream::url($this->rootDirName . '/releases/test_001.zip'),
+            $messenger, $listOfFiles, $config, $archiver);
+        $this->assertTrue($this->rootDir->hasChild('pkg/manifest.php'));
+        $this->assertTrue($this->rootDir->hasChild('releases/test_001.zip'));
+    }
+
+    private function constructSampleFinalManifest(array $installdefs, array $manifest)
+    {
+        if (!empty($installdefs['copy'])) {
+            $installdefs_copy = $installdefs['copy'];
+            unset($installdefs['copy']);
+        } else {
+            $installdefs_copy = array();
+        }
+
+        return sprintf(
+            "<?php\n\n\$manifest = %s;\n\n\$installdefs = %s;\n\n\$installdefs['copy'] = %s;\n",
+            var_export($manifest, true),
+            var_export($installdefs, true),
+            preg_replace('(\s+\d+\s=>)', '', var_export($installdefs_copy, true))
+        );
+
+
+    }
 }
