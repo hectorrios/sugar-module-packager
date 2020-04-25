@@ -199,6 +199,14 @@ class PackagerConfiguration
         return $this->prefix_release_package;
     }
 
+    /**
+     * @return string[]
+     */
+    public function getInstalldefsKeysToRemoveFromManifestCopy()
+    {
+        return $this->installdefs_keys_to_remove_from_manifest_copy;
+    }
+
 
 
 }
