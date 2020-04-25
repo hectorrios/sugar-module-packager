@@ -24,7 +24,8 @@
     "autoload": {
         "psr-4": {
             "SugarModulePackager\\": "src/",
-            "SugarModulePackager\\Test\\": "tests/"
+            "SugarModulePackager\\Test\\": "tests/",
+            "SugarModulePackager\\Test\\Mocks\\": "tests/mocks"
         }
     }
 }
