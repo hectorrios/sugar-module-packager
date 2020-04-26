@@ -19,11 +19,8 @@ class Packager
     /* @var PackagerConfiguration $config */
     private $config;
 
-    /* @var PackagerStepper $packagerService */
+    /* @var PackagerService $packagerService */
     private $packagerService;
-
-    protected $manifest_default_install_version_string = "array('^8.[\d]+.[\d]+$')";
-    protected $manifest_default_author = 'Enrico Simonetti';
 
     /**
      * Packager constructor.
@@ -62,21 +59,12 @@ class Packager
             $this->config->getPrefixReleasePackage() . $package_name . '.zip';
     }
 
-//    protected function createAllDirectories()
-//    {
-//        $this->fileReaderWriterService->createDirectory($this->config->getReleaseDirectory());
-//        $this->fileReaderWriterService->createDirectory($this->config->getConfigDirectory());
-//        $this->fileReaderWriterService->createDirectory($this->config->getSrcDirectory());
-//        $this->fileReaderWriterService->createDirectory($this->config->getPkgDirectory());
-//    }
-
-    protected function buildSimplePath($directory = '', $file = '')
+    protected function createAllDirectories()
     {
-        $path = '';
-        if (!empty($directory) && !empty($file)) {
-            $path = realpath($directory) . DIRECTORY_SEPARATOR . $file;
-        }
-        return $path;
+        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getReleaseDirectory());
+        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getConfigDirectory());
+        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getSrcDirectory());
+        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getPkgDirectory());
     }
 
     protected function getDirectoryContentIterator($path)
@@ -106,16 +94,16 @@ class Packager
         return $result;
     }
 
-    protected function wipePkgDirectory()
-    {
-        $pkg_files = $this->getDirectoryContentIterator($this->config->getPkgDirectory());
-
-        if (!empty($pkg_files)) {
-            foreach ($pkg_files as $pkg_file) {
-                unlink($pkg_file->getPathname());
-            }
-        }
-    }
+//    protected function wipePkgDirectory()
+//    {
+//        $pkg_files = $this->getDirectoryContentIterator($this->config->getPkgDirectory());
+//
+//        if (!empty($pkg_files)) {
+//            foreach ($pkg_files as $pkg_file) {
+//                unlink($pkg_file->getPathname());
+//            }
+//        }
+//    }
 
     /**
      * @param string $version
@@ -172,41 +160,46 @@ class Packager
 //        return $manifest;
 //    }
 
-    protected function getInstallDefs($manifest, $module_files_list)
-    {
-        $installdefs = array();
-        $installdefs_original = array();
-        $installdefs_generated = array('copy' => array());
+//    protected function getInstallDefs($manifest, $module_files_list)
+//    {
+//        $installdefs = array();
+//        $installdefs_original = array();
+//        $installdefs_generated = array('copy' => array());
+//
+//        if (!empty($manifest['id'])) {
+//            $installdefs_original['id'] = $manifest['id'];
+//        }
+//
+//        if (is_dir($this->config->getConfigDirectory()) &&
+//            file_exists($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getConfigInstalldefsFile()))) {
+//            require($this->buildSimplePath($this->config->getConfigDirectory(),
+//                $this->config->getConfigInstalldefsFile()));
+//        }
+//
+//        if (!empty($module_files_list)) {
+//            foreach ($module_files_list as $file_relative => $file_realpath) {
+//                if ($this->shouldAddToManifestCopy($file_relative, $installdefs)) {
+//                    $installdefs_generated['copy'][] = array(
+//                        'from' => '<basepath>/' . $file_relative,
+//                        'to' => $file_relative,
+//                    );
+//                    $this->messageOutputter->message('* Automatically added manifest copy directive for ' . $file_relative);
+//                } else {
+//                    $this->messageOutputter->message('* Skipped manifest copy directive for ' . $file_relative);
+//                }
+//            }
+//        }
+//
+//        $installdefs = array_replace_recursive($installdefs_original, $installdefs, $installdefs_generated);
+//
+//        return $installdefs;
+//    }
 
-        if (!empty($manifest['id'])) {
-            $installdefs_original['id'] = $manifest['id'];
-        }
-
-        if (is_dir($this->config->getConfigDirectory()) &&
-            file_exists($this->buildSimplePath($this->config->getConfigDirectory(), $this->config->getConfigInstalldefsFile()))) {
-            require($this->buildSimplePath($this->config->getConfigDirectory(),
-                $this->config->getConfigInstalldefsFile()));
-        }
-
-        if (!empty($module_files_list)) {
-            foreach ($module_files_list as $file_relative => $file_realpath) {
-                if ($this->shouldAddToManifestCopy($file_relative, $installdefs)) {
-                    $installdefs_generated['copy'][] = array(
-                        'from' => '<basepath>/' . $file_relative,
-                        'to' => $file_relative,
-                    );
-                    $this->messageOutputter->message('* Automatically added manifest copy directive for ' . $file_relative);
-                } else {
-                    $this->messageOutputter->message('* Skipped manifest copy directive for ' . $file_relative);
-                }
-            }
-        }
-
-        $installdefs = array_replace_recursive($installdefs_original, $installdefs, $installdefs_generated);
-
-        return $installdefs;
-    }
-
+    /**
+     * @param $file_relative
+     * @param $custom_installdefs
+     * @return bool
+     */
     protected function shouldAddToManifestCopy($file_relative, $custom_installdefs)
     {
         if (!in_array(basename($file_relative), $this->config->getFilesToRemoveFromManifestCopy())) {
@@ -229,21 +222,22 @@ class Packager
     protected function copySrcIntoPkg()
     {
         //TODO: simplify this by deferring to the copyDirectory method in ReaderWriter
-
+        $this->packagerService->getFileReaderWriterService()->copyDirectory($this->config->getSrcDirectory(),
+            $this->config->getPkgDirectory());
         // copy into pkg all src files
-        $common_files_list = $this->getModuleFiles($this->config->getSrcDirectory());
-        if (!empty($common_files_list)) {
-            foreach ($common_files_list as $file_relative => $file_realpath) {
-                $destination_directory = $this->config->getPkgDirectory() . DIRECTORY_SEPARATOR .
-                    dirname($file_relative) . DIRECTORY_SEPARATOR;
-
-                $this->packagerService->getFileReaderWriterService()
-                    ->createDirectory($destination_directory);
-                $this->packagerService->getFileReaderWriterService()
-                    ->copyFile($file_realpath,
-                        $destination_directory . basename($file_realpath));
-            }
-        }
+//        $common_files_list = $this->getModuleFiles($this->config->getSrcDirectory());
+//        if (!empty($common_files_list)) {
+//            foreach ($common_files_list as $file_relative => $file_realpath) {
+//                $destination_directory = $this->config->getPkgDirectory() . DIRECTORY_SEPARATOR .
+//                    dirname($file_relative) . DIRECTORY_SEPARATOR;
+//
+//                $this->packagerService->getFileReaderWriterService()
+//                    ->createDirectory($destination_directory);
+//                $this->packagerService->getFileReaderWriterService()
+//                    ->copyFile($file_realpath,
+//                        $destination_directory . basename($file_realpath));
+//            }
+//        }
     }
 
 //    protected function generateZipPackage($manifest, $zipFile)
@@ -288,24 +282,27 @@ class Packager
     /**
      * @param string $version
      * @throws ManifestIncompleteException
+     * @throws IllegalStateException
      */
-    public function build($version = '')
+    public function build($version)
     {
         if (empty($version)) {
             $this->messageOutputter->message('Provide version number');
             return;
         }
 
+        //create all our necessary directories if they don't already exist
         $this->createAllDirectories();
         try {
-            $manifest = $this->getManifest($version);
+            $manifest = $this->packagerService->getManifestFileContents($this->config->getManifestFile());
+            //$manifest = $this->getManifest($version);
         } catch (ManifestIncompleteException $e) {
             throw $e;
         }
 
         if (empty($manifest)) {
-            //TODO Display a message?
-            return;
+            throw new IllegalStateException('the manifest contents are empty which means that it somehow was' .
+                ' not read correctly from the filesystem');
         }
 
         $zip = $this->getZipName($manifest['id'] . '_' . $version);
@@ -315,10 +312,26 @@ class Packager
             return;
         }
 
-        $this->wipePkgDirectory();
+        $this->packagerService->wipeDirectory($this->config->getPkgDirectory());
         $this->copySrcIntoPkg();
-        $this->generateTemplatedConfiguredFiles();
-        $this->generateZipPackage($manifest, $zip);
+
+        $templates = $this->packagerService->loadTemplateConfiguration($this->config->getConfigTemplateFile());
+
+        $this->packagerService->generateTemplatedConfiguredFiles($templates, $this->messageOutputter,
+            $this->config->getPkgDirectory());
+
+        $installDefs = $this->packagerService->buildUpInstallDefs(
+            $this->packagerService->getFileReaderWriterService()->getFilesFromDirectory($this->config->getPkgDirectory()),
+            $manifest['id'], $this->messageOutputter, [$this, 'shouldAddToManifestCopy']
+        );
+
+        $pkgDirFiles =
+            $this->packagerService->getFileReaderWriterService()->getFilesFromDirectory(
+                $this->config->getPkgDirectory());
+
+        $manifestContent = $this->packagerService->buildFinalManifest($manifest, $installDefs);
+        $this->packagerService->generateZipPackage($manifestContent, $zip, $this->messageOutputter, $pkgDirFiles,
+            $this->config, new ZipArchive());
     }
 
 //    protected function generateTemplatedConfiguredFiles()
