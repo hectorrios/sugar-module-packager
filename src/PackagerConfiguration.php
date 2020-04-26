@@ -215,6 +215,15 @@ class PackagerConfiguration
         return $this->files_to_remove_from_manifest_copy;
     }
 
+    /**
+     * @return string
+     */
+    public function getConfigTemplateFile()
+    {
+        return $this->config_template_file;
+    }
+
+
 
 
 }
