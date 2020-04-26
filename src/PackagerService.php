@@ -68,6 +68,20 @@ class PackagerService
         return $manifest;
     }
 
+    public function createSkeletonManifestFile(PackagerConfiguration $configuration)
+    {
+        // create sample empty manifest file
+        $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
+            "\$manifest['built_in_version'] = '';".PHP_EOL.
+            "\$manifest['name'] = '';".PHP_EOL.
+            "\$manifest['description'] = '';".PHP_EOL.
+            "\$manifest['author'] = '". $configuration->getManifestDefaultAuthor() . "';".PHP_EOL.
+            "\$manifest['acceptable_sugar_versions']['regex_matches'] = ". $configuration->getManifestDefaultInstallVersionString() .";";
+
+        $this->fileReaderWriterService->writeFile($configuration->getPathToManifestFile(),
+                $manifestContent);
+    }
+
     public function wipeDirectory($pkgDirectory)
     {
         $pkg_files = $this->getDirectoryContentIterator($pkgDirectory);
@@ -324,13 +338,4 @@ class PackagerService
         return $this->fileReaderWriterService;
     }
 
-
-    protected function buildSimplePathRedundant($directory = '', $file = '')
-    {
-        $path = '';
-        if (!empty($directory) && !empty($file)) {
-            $path = realpath($directory) . DIRECTORY_SEPARATOR . $file;
-        }
-        return $path;
-    }
 }
