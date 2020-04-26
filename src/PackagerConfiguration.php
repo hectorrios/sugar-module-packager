@@ -61,6 +61,9 @@ class PackagerConfiguration
     public function __construct($version, $softwareName, $softwareVersion, $packageRootDir = '')
     {
         $this->version = $version;
+        if (empty($packageRootDir)) {
+            $packageRootDir = realpath('.');
+        }
         $this->packageRootDir = $packageRootDir;
         $this->softwareName = $softwareName;
         $this->softwareVersion = $softwareVersion;
@@ -226,18 +229,11 @@ class PackagerConfiguration
     private function buildSimplePath($directory = '', $file = '')
     {
         $path = '';
-        if (!empty($directory) && !empty($file)) {
-            $path = realpath($directory) . DIRECTORY_SEPARATOR . $file;
+        if (empty($directory) || empty($file)) {
+            return $path;
         }
-        return $path;
-    }
 
-    /**
-     * @param string $pathToConfigDirectory
-     */
-    public function setConfigDirectory($pathToConfigDirectory)
-    {
-        $this->config_directory = $pathToConfigDirectory;
+        return $this->packageRootDir . DIRECTORY_SEPARATOR . $directory . DIRECTORY_SEPARATOR . $file;
     }
 
     /**
