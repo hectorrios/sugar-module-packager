@@ -678,6 +678,24 @@ $installdefs[\'beans\'] = array (
         $this->assertTrue($this->rootDir->hasChild('releases/test_001.zip'));
     }
 
+    public function testCreateSkeletonManifestFile()
+    {
+        $structure = [
+           'configuration' => [],
+        ] ;
+        vfsStream::create($structure);
+
+        $config = new PackagerConfiguration('0.0.1', $this->softwareVersion, $this->softwareName,
+            vfsStream::url($this->rootDirName));
+//        $config->setConfigDirectory(vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'config'));
+
+        $this->assertFalse($this->rootDir->hasChild('configuration/manifest.php'));
+        $pService = new PackagerService(new ReaderWriterTestDecorator(new FileReaderWriterImpl()));
+        $pService->createSkeletonManifestFile($config);
+        $this->assertTrue($this->rootDir->hasChild('configuration/manifest.php'));
+
+    }
+
     private function constructSampleFinalManifest(array $installdefs, array $manifest)
     {
         if (!empty($installdefs['copy'])) {
