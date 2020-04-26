@@ -223,7 +223,28 @@ class PackagerConfiguration
         return $this->config_template_file;
     }
 
+    private function buildSimplePath($directory = '', $file = '')
+    {
+        $path = '';
+        if (!empty($directory) && !empty($file)) {
+            $path = realpath($directory) . DIRECTORY_SEPARATOR . $file;
+        }
+        return $path;
+    }
 
+    /**
+     * @param string $pathToConfigDirectory
+     */
+    public function setConfigDirectory($pathToConfigDirectory)
+    {
+        $this->config_directory = $pathToConfigDirectory;
+    }
 
-
+    /**
+     * @return string path to the manifest file
+     */
+    public function getPathToManifestFile()
+    {
+        return $this->buildSimplePath($this->getConfigDirectory(), $this->getManifestFile());
+    }
 }
