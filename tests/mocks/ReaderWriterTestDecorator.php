@@ -48,9 +48,7 @@ class ReaderWriterTestDecorator implements ReaderWriter
 
     public function resolvePath($path = '')
     {
-        echo 'decorator resolvePath:: The path param value is: ' . PHP_EOL;
         if (!array_key_exists($path, $this->pathMappings)) {
-            echo 'Ooops we hit a path not resolved in the decorator.' . PHP_EOL;
            return false;
         }
 
