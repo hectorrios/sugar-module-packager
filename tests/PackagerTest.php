@@ -156,10 +156,63 @@ class PackagerTest extends TestCase
             ->withAnyParameters()
             ->will($this->returnValue(array()));
 
+        $mockPService->expects($this->any())
+            ->method('getFilesFromDirectory')
+            ->will($this->returnValue(array()));
+
         $messenger = new MockMessageOutputter();
         $messenger->toggleEnableEcho();
         $packager = new Packager($mockPService, $messenger, $config);
         $packager->build('0.0.2');
+    }
+
+    public function testCopySrcIntoPkg()
+    {
+        $config = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
+            Packager::SW_VERSION, vfsStream::url($this->rootDirName));
+
+        $structure = [
+            'src' => [
+                'one.txt' => 'first file',
+                'two.txt' => 'second file',
+                'nested_dir' => [
+                    'nested_one.txt' => 'nested one, first file',
+                    'nested_two.txt' => 'nested one, second file',
+                    'nested_three.txt' => 'nested one, third file',
+                ],
+            ],
+            'pkg' => [
+            ]
+        ];
+
+        vfsStream::create($structure);
+
+        $mockPService = $this->getMockBuilder(PackagerService::class)
+            ->disableOriginalConstructor()
+//            ->setConstructorArgs([new FileReaderWriterImpl()])
+            ->getMock();
+
+        $mockPService->expects($this->once())
+            ->method('copySrcIntoPkg')
+            ->with($this->equalTo($config));
+
+        $mockPService->expects($this->once())
+            ->method('getManifestFileContents')
+            ->will($this->returnValue(array('author' => 'Sugar', 'id' => '000_test',)));
+
+        $mockPService->expects($this->any())
+            ->method('getFilesFromDirectory')
+            ->will($this->returnValue(array()));
+
+        $mockPService->expects($this->once())
+            ->method('buildUpInstallDefs')
+            ->withAnyParameters()
+            ->will($this->returnValue(array()));
+
+        $messenger = new MockMessageOutputter();
+        $messenger->toggleEnableEcho();
+        $packager = new Packager($mockPService, $messenger, $config);
+        $packager->build('1.0.2');
     }
 
 
