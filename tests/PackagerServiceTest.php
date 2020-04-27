@@ -726,6 +726,20 @@ $installdefs[\'beans\'] = array (
 
     }
 
+    public function testCreateAllPackagerDirectories()
+    {
+        $config = new PackagerConfiguration('0.0.1', $this->softwareName, $this->softwareVersion,
+            $this->rootDir->url());
+
+        $pService = new PackagerService(new FileReaderWriterImpl());
+        $pService->createAllPackagerDirectories($config);
+
+        $this->assertTrue($this->rootDir->hasChild('pkg'));
+        $this->assertTrue($this->rootDir->hasChild('src'));
+        $this->assertTrue($this->rootDir->hasChild('releases'));
+        $this->assertTrue($this->rootDir->hasChild('configuration'));
+}
+
     private function constructSampleFinalManifest(array $installdefs, array $manifest)
     {
         if (!empty($installdefs['copy'])) {

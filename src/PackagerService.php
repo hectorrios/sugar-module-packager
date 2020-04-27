@@ -349,6 +349,18 @@ class PackagerService
         return $this->fileReaderWriterService;
     }
 
+    public function createAllPackagerDirectories(PackagerConfiguration $config)
+    {
+        $this->getFileReaderWriterService()->createDirectory(
+            $config->getPathToReleasesDir());
+        $this->getFileReaderWriterService()->createDirectory(
+            $config->getPathToConfigurationDir());
+        $this->getFileReaderWriterService()->createDirectory(
+            $config->getPathToSrcDir());
+        $this->getFileReaderWriterService()->createDirectory(
+            $config->getPathToPkgDir());
+    }
+
     private function validateManifestArray(array $manifestStructure)
     {
         if ( empty($manifestStructure['id']) ||
