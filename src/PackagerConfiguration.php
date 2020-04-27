@@ -10,7 +10,7 @@ class PackagerConfiguration
     /* @var string $packageRootDir */
     private $packageRootDir;
 
-    private $release_directory = 'releases';
+    private $release_directory_name = 'releases';
     private $prefix_release_package = 'module_';
     private $config_directory_name = 'configuration';
     private $config_template_file = 'templates.php';
@@ -80,9 +80,9 @@ class PackagerConfiguration
     /**
      * @return string
      */
-    public function getReleaseDirectory()
+    public function getReleaseDirectoryName()
     {
-        return $this->release_directory;
+        return $this->release_directory_name;
     }
 
     /**
@@ -252,6 +252,16 @@ class PackagerConfiguration
     public function getPathToPkgDir()
     {
         return $this->buildSimplePath($this->getPkgDirectoryName());
+    }
+
+    public function getPathToSrcDir()
+    {
+        return $this->buildSimplePath($this->getSrcDirectoryName());
+    }
+
+    public function getPathToReleasesDir()
+    {
+        return $this->buildSimplePath($this->getReleaseDirectoryName());
     }
 
 
