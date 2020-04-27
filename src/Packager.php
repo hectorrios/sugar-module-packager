@@ -333,14 +333,14 @@ class Packager
         }
 
         $installDefs = $this->packagerService->buildUpInstallDefs(
-            $this->packagerService->getFileReaderWriterService()->getFilesFromDirectory($this->config->getPathToPkgDir()),
+            $this->packagerService->getFilesFromDirectory($this->config->getPathToPkgDir()),
             $manifest['id'], $this->messageOutputter, function($file_relative, $customInstallDefs) {
             $this->shouldAddToManifestCopy($file_relative, $customInstallDefs);
         }
         );
 
         $pkgDirFiles =
-            $this->packagerService->getFileReaderWriterService()->getFilesFromDirectory(
+            $this->packagerService->getFilesFromDirectory(
                 $this->config->getPathToPkgDir());
 
         $manifestContent = $this->packagerService->buildFinalManifest($manifest, $installDefs);
