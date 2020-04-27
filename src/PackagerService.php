@@ -201,7 +201,6 @@ class PackagerService
         foreach ($templates as $template_src_directory => $template_values) {
 
             $template_dst_directory = $template_values['directory_pattern'];
-            echo 'the template src directory: ' . $template_src_directory . PHP_EOL;
             $modules = $template_values['modules'];
 
             //resolve the template source directory and handle the case that the directory might not be
