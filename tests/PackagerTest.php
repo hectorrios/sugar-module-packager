@@ -18,9 +18,11 @@ class PackagerTest extends TestCase
     /* @var vfsStreamDirectory */
     private $rootDir;
 
+    private $rootDirName = 'root';
+
     public function setup()
     {
-        $this->rootDir = vfsStream::setup('exampleDir');
+        $this->rootDir = vfsStream::setup($this->rootDirName);
     }
 
     public function testBuildWithNoVersionProvided()
@@ -32,17 +34,22 @@ class PackagerTest extends TestCase
         $pService = new PackagerService(new FileReaderWriterImpl());
         $packager = new Packager($pService, $messageOutputter, $pConfig);
 
-        $packager->build();
+        $packager->build('');
         $this->assertEquals($expectedMessage, $messageOutputter->getLastMessage());
     }
 
     public function testBuildThrowsManifestIncompleteExceptionWhenNoManifestExists()
     {
+        $structure = [
+          'configuration' => [],
+        ];
+
+        vfsStream::create($structure);
 
         $messageOutputter = new MockMessageOutputter();
         $pConfig = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
-            Packager::SW_VERSION);
-        $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
+            Packager::SW_VERSION, vfsStream::url($this->rootDirName));
+        $readerWriter = new FileReaderWriterImpl();
         $pService = new PackagerService($readerWriter);
         $packager = new Packager($pService, $messageOutputter, $pConfig);
 
