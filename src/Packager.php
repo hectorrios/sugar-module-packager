@@ -61,10 +61,14 @@ class Packager
 
     protected function createAllDirectories()
     {
-        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getReleaseDirectory());
-        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getConfigDirectoryName());
-        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getSrcDirectoryName());
-        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getPkgDirectoryName());
+        $this->packagerService->getFileReaderWriterService()->createDirectory(
+            $this->config->getPathToReleasesDir());
+        $this->packagerService->getFileReaderWriterService()->createDirectory(
+            $this->config->getPathToConfigurationDir());
+        $this->packagerService->getFileReaderWriterService()->createDirectory(
+            $this->config->getPathToSrcDir());
+        $this->packagerService->getFileReaderWriterService()->createDirectory(
+            $this->config->getPathToPkgDir());
     }
 
     protected function getDirectoryContentIterator($path)
