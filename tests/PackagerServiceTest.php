@@ -688,7 +688,7 @@ $installdefs[\'beans\'] = array (
         $config = new PackagerConfiguration('v0.0.1', $this->softwareName, $this->softwareVersion);
         $pService = new PackagerService($readerWriter);
         $messenger = new MockMessageOutputter();
-        $messenger->toggleEnableEcho();
+//        $messenger->toggleEnableEcho();
 
         $archiver = $this->getMockBuilder("\ZipArchive")->getMock();
         $archiver->expects($this->exactly(2))
