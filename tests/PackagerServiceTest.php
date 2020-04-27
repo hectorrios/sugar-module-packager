@@ -773,6 +773,36 @@ $installdefs[\'beans\'] = array (
 
     }
 
+    public function testGetFilesFromDirectory()
+    {
+        $config = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
+            Packager::SW_VERSION, vfsStream::url($this->rootDirName));
+
+        $structure = [
+            'src' => [
+                'one.txt' => 'first file',
+                'two.txt' => 'second file',
+                'nested_dir' => [
+                    'nested_one.txt' => 'nested one, first file',
+                    'nested_two.txt' => 'nested one, second file',
+                    'nested_three.txt' => 'nested one, third file',
+                    '.gitignore' => '.idea/' . PHP_EOL . '.git' . PHP_EOL,
+                ],
+            ],
+            'pkg' => [
+            ]
+        ];
+
+        vfsStream::create($structure);
+
+        $pService = new PackagerService(new FileReaderWriterImpl());
+        $files = $pService->getFilesFromDirectory($config->getPathToSrcDir(), '.gitignore');
+        $this->assertIsArray($files);
+        $this->assertNotEmpty($files);
+        $this->assertCount(5, $files);
+
+    }
+
     private function constructSampleFinalManifest(array $installdefs, array $manifest)
     {
         if (!empty($installdefs['copy'])) {

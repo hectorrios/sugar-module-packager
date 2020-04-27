@@ -367,6 +367,17 @@ class PackagerService
             $config->getPathToPkgDir());
     }
 
+    /**
+     * @param $pathToDirectory
+     * @param string ...$filesToExclude
+     * @return string[] all the files from this directory and nested directories. The keys of the
+     * array are the relative path of the file and the value is the full-path of the file
+     */
+    public function getFilesFromDirectory($pathToDirectory, ...$filesToExclude)
+    {
+        return $this->fileReaderWriterService->getFilesFromDirectory($pathToDirectory, ...$filesToExclude);
+    }
+
     private function validateManifestArray(array $manifestStructure)
     {
         if ( empty($manifestStructure['id']) ||
