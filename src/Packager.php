@@ -62,9 +62,9 @@ class Packager
     protected function createAllDirectories()
     {
         $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getReleaseDirectory());
-        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getConfigDirectory());
-        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getSrcDirectory());
-        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getPkgDirectory());
+        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getConfigDirectoryName());
+        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getSrcDirectoryName());
+        $this->packagerService->getFileReaderWriterService()->createDirectory($this->config->getPkgDirectoryName());
     }
 
     protected function getDirectoryContentIterator($path)
@@ -296,6 +296,9 @@ class Packager
         try {
             $manifest = $this->packagerService->getManifestFileContents($this->config->getManifestFile());
             //$manifest = $this->getManifest($version);
+            if (is_bool($manifest) && !$manifest) {
+                $this->packagerService->createSkeletonManifestFile($this->config);
+            }
         } catch (ManifestIncompleteException $e) {
             throw $e;
         }
