@@ -40,7 +40,7 @@ class PackagerConfigurationTest extends TestCase
         $config = new PackagerConfiguration('0.0.1', 'SugarPackager', '0.2.2',
             vfsStream::url($this->rootDirName));
 //        $config->setConfigDirectory(vfsStream::url($this->rootDirName . '/config'));
-        $this->assertEquals('configuration', $config->getConfigDirectory());
+        $this->assertEquals('configuration', $config->getConfigDirectoryName());
         $this->assertEquals('vfs://root/configuration/manifest.php', $config->GetPathToManifestFile());
     }
 

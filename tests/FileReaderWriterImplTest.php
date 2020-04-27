@@ -67,12 +67,12 @@ class FileReaderWriterImplTest extends TestCase
             $config->getManifestDefaultInstallVersionString() .";";
 
         $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
-        $readerWriter->createDirectory($config->getConfigDirectory());
-        $readerWriter->writeFile($config->getConfigDirectory() . DIRECTORY_SEPARATOR .
+        $readerWriter->createDirectory($config->getConfigDirectoryName());
+        $readerWriter->writeFile($config->getConfigDirectoryName() . DIRECTORY_SEPARATOR .
         $config->getManifestFile(), $manifestContent);
 
         $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
-        $this->assertTrue($this->rootDir->hasChild($config->getConfigDirectory() . DIRECTORY_SEPARATOR .
+        $this->assertTrue($this->rootDir->hasChild($config->getConfigDirectoryName() . DIRECTORY_SEPARATOR .
             $config->getManifestFile()));
     }
 
@@ -93,7 +93,7 @@ class FileReaderWriterImplTest extends TestCase
         $readerWriter = new FileReaderWriterImpl();
 
         $filePath = vfsStream::url('exampleDir' .
-            DIRECTORY_SEPARATOR . $config->getConfigDirectory() . DIRECTORY_SEPARATOR .
+            DIRECTORY_SEPARATOR . $config->getConfigDirectoryName() . DIRECTORY_SEPARATOR .
             $config->getManifestFile());
 
         $dirPart = dirname($filePath);
