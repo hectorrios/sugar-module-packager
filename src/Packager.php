@@ -55,7 +55,7 @@ class Packager
 
     protected function getZipName($package_name = '')
     {
-        return $this->config->getReleaseDirectory() . DIRECTORY_SEPARATOR .
+        return $this->config->getPathToReleasesDir() . DIRECTORY_SEPARATOR .
             $this->config->getPrefixReleasePackage() . $package_name . '.zip';
     }
 
@@ -298,7 +298,8 @@ class Packager
         //create all our necessary directories if they don't already exist
         $this->createAllDirectories();
         try {
-            $manifest = $this->packagerService->getManifestFileContents($this->config->getManifestFile());
+            $manifest = $this->packagerService->getManifestFileContents(
+                $this->config->getPathToManifestFile());
             //$manifest = $this->getManifest($version);
             if (is_bool($manifest) && !$manifest) {
                 $this->packagerService->createSkeletonManifestFile($this->config);
