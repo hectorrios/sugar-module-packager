@@ -251,7 +251,7 @@ class PackagerServiceTest extends TestCase
             ),
             'configuration' => array(
                 'manifest.php' => '<?php echo "my manifest file";',
-                'templates.php' => 'should be a php file',
+                'templates.php' => '<?php $message = "should be a php file";',
             ),
         );
 
