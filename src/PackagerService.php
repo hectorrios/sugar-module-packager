@@ -40,7 +40,8 @@ class PackagerService
 
     /**
      * @param $pathToManifestFile
-     * @return array containing the array contents of the manifest.php file.
+     * @return array|bool containing the array contents of the manifest.php file or False if
+     * the file does not exist.
      * @throws ManifestIncompleteException
      */
     public function getManifestFileContents($pathToManifestFile)
@@ -49,25 +50,27 @@ class PackagerService
 
         //if (!file_exists($this->buildSimplePath($pathToManifestFile))) {
         if (!file_exists($pathToManifestFile)) {
-            throw new ManifestIncompleteException('Manifest at path: ' . $pathToManifestFile . ' does not exist');
+            //throw new ManifestIncompleteException('Manifest at path: ' . $pathToManifestFile . ' does not exist');
+            return false;
         }
 
         require($pathToManifestFile);
 
-        if ( empty($manifest['id']) ||
-            empty($manifest['built_in_version']) ||
-            empty($manifest['name']) ||
-            empty($manifest['version']) ||
-            empty($manifest['author']) ||
-            empty($manifest['acceptable_sugar_versions']['regex_matches']) ) {
-
-            throw new ManifestIncompleteException('Please fill in the required details on your ' .
-               $pathToManifestFile . ' file.');
+        try {
+            $this->validateManifestArray($manifest);
+        } catch (ManifestIncompleteException $e) {
+            throw $e;
         }
 
         return $manifest;
     }
 
+    /**
+     *
+     * @param PackagerConfiguration $configuration
+     * @return false|array
+     * @throws ManifestIncompleteException
+     */
     public function createSkeletonManifestFile(PackagerConfiguration $configuration)
     {
         // create sample empty manifest file
@@ -80,6 +83,15 @@ class PackagerService
 
         $this->fileReaderWriterService->writeFile($configuration->getPathToManifestFile(),
                 $manifestContent);
+
+        $manifestContents = $this->getManifestFileContents($configuration->getPathToManifestFile());
+        try {
+            $this->validateManifestArray($manifestContents);
+        } catch (ManifestIncompleteException $e) {
+            throw $e;
+        }
+
+        return $manifestContents;
     }
 
     public function wipeDirectory($pkgDirectory)
@@ -260,7 +272,7 @@ class PackagerService
         }
 
         // adding the file as well, for reference purpose only
-        $pkgDirPath = $this->fileReaderWriterService->resolvePath($config->getPkgDirectory());
+        $pkgDirPath = $this->fileReaderWriterService->resolvePath($config->getPkgDirectoryName());
         $this->fileReaderWriterService->writeFile($pkgDirPath .
             DIRECTORY_SEPARATOR . $config->getManifestFile(), $manifestContent);
         $archiver->addFromString($config->getManifestFile(), $manifestContent);
@@ -338,4 +350,16 @@ class PackagerService
         return $this->fileReaderWriterService;
     }
 
+    private function validateManifestArray(array $manifestStructure)
+    {
+        if ( empty($manifestStructure['id']) ||
+            empty($manifestStructure['built_in_version']) ||
+            empty($manifestStructure['name']) ||
+            empty($manifestStructure['version']) ||
+            empty($manifestStructure['author']) ||
+            empty($manifestStructure['acceptable_sugar_versions']['regex_matches']) ) {
+
+            throw new ManifestIncompleteException('manifest file array failed validation');
+        }
+    }
 }
