@@ -361,6 +361,12 @@ class PackagerService
             $config->getPathToPkgDir());
     }
 
+    public function copySrcIntoPkg(PackagerConfiguration $config)
+    {
+        $this->getFileReaderWriterService()->copyDirectory($config->getPathToSrcDir(),
+            $config->getPathToPkgDir());
+    }
+
     private function validateManifestArray(array $manifestStructure)
     {
         if ( empty($manifestStructure['id']) ||

@@ -8,6 +8,7 @@ use org\bovigo\vfs\visitor\vfsStreamStructureVisitor;
 use PHPUnit\Framework\TestCase;
 use SugarModulePackager\FileReaderWriterImpl;
 use SugarModulePackager\ManifestIncompleteException;
+use SugarModulePackager\Packager;
 use SugarModulePackager\PackagerConfiguration;
 use SugarModulePackager\PackagerService;
 use SugarModulePackager\Test\Mocks\MockMessageOutputter;
@@ -738,7 +739,39 @@ $installdefs[\'beans\'] = array (
         $this->assertTrue($this->rootDir->hasChild('src'));
         $this->assertTrue($this->rootDir->hasChild('releases'));
         $this->assertTrue($this->rootDir->hasChild('configuration'));
-}
+    }
+
+    public function testCopySrcIntoPkg()
+    {
+        $structure = array(
+            'src' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                'WOM2Api.php' => '<?php echo "Hello";',
+                                '.gitkeep' => 'this should be ignored',
+                                'file_to_ignore.txt' => 'this should also be ignored',
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            'pkg' => [],
+        );
+
+        vfsStream::create($structure);
+
+        $config = new PackagerConfiguration('0.2.5', $this->softwareName, $this->softwareVersion,
+            $this->rootDir->url());
+
+        $pService = new PackagerService(new FileReaderWriterImpl());
+        $pService->copySrcIntoPkg($config);
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/WOM2Api.php'));
+
+
+    }
 
     private function constructSampleFinalManifest(array $installdefs, array $manifest)
     {
