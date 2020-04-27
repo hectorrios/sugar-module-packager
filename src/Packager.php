@@ -226,8 +226,8 @@ class Packager
     protected function copySrcIntoPkg()
     {
         //TODO: simplify this by deferring to the copyDirectory method in ReaderWriter
-        $this->packagerService->getFileReaderWriterService()->copyDirectory($this->config->getSrcDirectory(),
-            $this->config->getPkgDirectory());
+        $this->packagerService->getFileReaderWriterService()->copyDirectory($this->config->getPathToSrcDir(),
+            $this->config->getPathToPkgDir());
         // copy into pkg all src files
 //        $common_files_list = $this->getModuleFiles($this->config->getSrcDirectory());
 //        if (!empty($common_files_list)) {
@@ -320,22 +320,26 @@ class Packager
             return;
         }
 
-        $this->packagerService->wipeDirectory($this->config->getPkgDirectory());
+        $this->packagerService->wipeDirectory($this->config->getPathToPkgDir());
         $this->copySrcIntoPkg();
 
         $templates = $this->packagerService->loadTemplateConfiguration($this->config->getConfigTemplateFile());
 
-        $this->packagerService->generateTemplatedConfiguredFiles($templates, $this->messageOutputter,
-            $this->config->getPkgDirectory());
+        if (!empty($templates)) {
+            $this->packagerService->generateTemplatedConfiguredFiles($templates, $this->messageOutputter,
+                $this->config->getPathToPkgDir());
+        }
 
         $installDefs = $this->packagerService->buildUpInstallDefs(
-            $this->packagerService->getFileReaderWriterService()->getFilesFromDirectory($this->config->getPkgDirectory()),
-            $manifest['id'], $this->messageOutputter, [$this, 'shouldAddToManifestCopy']
+            $this->packagerService->getFileReaderWriterService()->getFilesFromDirectory($this->config->getPathToPkgDir()),
+            $manifest['id'], $this->messageOutputter, function($file_relative, $customInstallDefs) {
+            $this->shouldAddToManifestCopy($file_relative, $customInstallDefs);
+        }
         );
 
         $pkgDirFiles =
             $this->packagerService->getFileReaderWriterService()->getFilesFromDirectory(
-                $this->config->getPkgDirectory());
+                $this->config->getPathToPkgDir());
 
         $manifestContent = $this->packagerService->buildFinalManifest($manifest, $installDefs);
         $this->packagerService->generateZipPackage($manifestContent, $zip, $this->messageOutputter, $pkgDirFiles,
