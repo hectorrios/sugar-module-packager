@@ -36,10 +36,12 @@ class PackagerServiceTest extends TestCase
 //        $config = new PackagerConfiguration('0.0.1');
         $service = new PackagerService($readerWriter);
 
-        $this->expectException(ManifestIncompleteException::class);
+        //$this->expectException(ManifestIncompleteException::class);
 
-        $service->getManifestFileContents(vfsStream::url($this->rootDirName .
+        $contents = $service->getManifestFileContents(vfsStream::url($this->rootDirName .
             DIRECTORY_SEPARATOR . 'manifest.php'));
+        $this->assertIsBool($contents);
+        $this->assertFalse($contents);
     }
 
     public function testGetManifestFileContentsWithBareMinimum()
@@ -71,6 +73,33 @@ class PackagerServiceTest extends TestCase
 
         $this->assertIsArray($contents, 'the contents retrieved should be an array');
         $this->assertArrayHasKey('author', $contents);
+    }
+
+    public function testGetManifestFileContentsWhereManifestFailsBasicValidation()
+    {
+        $config = new PackagerConfiguration('0.0.2', $this->softwareName, $this->softwareVersion);
+
+        //the manifest is missing the "description" key which is ok but the
+        // author field for example cannot be empty
+        $structure = [
+          "configuration" => [
+              'manifest.php' => "<?php".PHP_EOL."\$manifest['id'] = 'id_001';".PHP_EOL.
+                  "\$manifest['built_in_version'] = '9.3';".PHP_EOL.
+                  "\$manifest['version'] = '0.0.1';".PHP_EOL.
+                  "\$manifest['name'] = 'test case';".PHP_EOL.
+                  "\$manifest['author'] = '';" . PHP_EOL .
+                  "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
+                  $config->getManifestDefaultInstallVersionString() .";",
+          ],
+        ];
+
+        vfsStream::create($structure);
+
+        $pService = new PackagerService(new FileReaderWriterImpl());
+        $this->expectException(ManifestIncompleteException::class);
+        $contents = $pService->getManifestFileContents(vfsStream::url($this->rootDirName .DIRECTORY_SEPARATOR .
+            'configuration' . DIRECTORY_SEPARATOR . $config->getManifestFile()));
+
     }
 
     public function testCreatePackageDirectories()
@@ -691,7 +720,8 @@ $installdefs[\'beans\'] = array (
 
         $this->assertFalse($this->rootDir->hasChild('configuration/manifest.php'));
         $pService = new PackagerService(new ReaderWriterTestDecorator(new FileReaderWriterImpl()));
-        $pService->createSkeletonManifestFile($config);
+        $this->expectException(ManifestIncompleteException::class);
+        $newManifestContents = $pService->createSkeletonManifestFile($config);
         $this->assertTrue($this->rootDir->hasChild('configuration/manifest.php'));
 
     }
