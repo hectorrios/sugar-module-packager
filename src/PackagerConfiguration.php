@@ -229,11 +229,16 @@ class PackagerConfiguration
     private function buildSimplePath($directory = '', $file = '')
     {
         $path = '';
-        if (empty($directory) || empty($file)) {
+        if (empty($directory)) {
             return $path;
         }
 
-        return $this->packageRootDir . DIRECTORY_SEPARATOR . $directory . DIRECTORY_SEPARATOR . $file;
+        $finalPath = $this->packageRootDir . DIRECTORY_SEPARATOR . $directory;
+        if (!empty($file)) {
+            $finalPath = $finalPath . DIRECTORY_SEPARATOR . $file;
+        }
+
+        return $finalPath;
     }
 
     /**
