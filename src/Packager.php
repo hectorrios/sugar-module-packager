@@ -59,17 +59,17 @@ class Packager
             $this->config->getPrefixReleasePackage() . $package_name . '.zip';
     }
 
-    protected function createAllDirectories()
-    {
-        $this->packagerService->getFileReaderWriterService()->createDirectory(
-            $this->config->getPathToReleasesDir());
-        $this->packagerService->getFileReaderWriterService()->createDirectory(
-            $this->config->getPathToConfigurationDir());
-        $this->packagerService->getFileReaderWriterService()->createDirectory(
-            $this->config->getPathToSrcDir());
-        $this->packagerService->getFileReaderWriterService()->createDirectory(
-            $this->config->getPathToPkgDir());
-    }
+//    protected function createAllDirectories()
+//    {
+//        $this->packagerService->getFileReaderWriterService()->createDirectory(
+//            $this->config->getPathToReleasesDir());
+//        $this->packagerService->getFileReaderWriterService()->createDirectory(
+//            $this->config->getPathToConfigurationDir());
+//        $this->packagerService->getFileReaderWriterService()->createDirectory(
+//            $this->config->getPathToSrcDir());
+//        $this->packagerService->getFileReaderWriterService()->createDirectory(
+//            $this->config->getPathToPkgDir());
+//    }
 
     protected function getDirectoryContentIterator($path)
     {
@@ -223,11 +223,12 @@ class Packager
         return false;
     }
 
-    protected function copySrcIntoPkg()
-    {
-        //TODO: simplify this by deferring to the copyDirectory method in ReaderWriter
-        $this->packagerService->getFileReaderWriterService()->copyDirectory($this->config->getPathToSrcDir(),
-            $this->config->getPathToPkgDir());
+//    protected function copySrcIntoPkg()
+//    {
+//        TODO: simplify this by deferring to the copyDirectory method in ReaderWriter
+//        $this->packagerService->getFileReaderWriterService()->copyDirectory($this->config->getPathToSrcDir(),
+//            $this->config->getPathToPkgDir());
+
         // copy into pkg all src files
 //        $common_files_list = $this->getModuleFiles($this->config->getSrcDirectory());
 //        if (!empty($common_files_list)) {
@@ -242,7 +243,7 @@ class Packager
 //                        $destination_directory . basename($file_realpath));
 //            }
 //        }
-    }
+//    }
 
 //    protected function generateZipPackage($manifest, $zipFile)
 //    {
@@ -296,7 +297,8 @@ class Packager
         }
 
         //create all our necessary directories if they don't already exist
-        $this->createAllDirectories();
+        $this->packagerService->createAllPackagerDirectories($this->config);
+
         try {
             $manifest = $this->packagerService->getManifestFileContents(
                 $this->config->getPathToManifestFile());
@@ -321,7 +323,7 @@ class Packager
         }
 
         $this->packagerService->wipeDirectory($this->config->getPathToPkgDir());
-        $this->copySrcIntoPkg();
+        $this->packagerService->copySrcIntoPkg($this->config);
 
         $templates = $this->packagerService->loadTemplateConfiguration($this->config->getConfigTemplateFile());
 
