@@ -12,11 +12,11 @@ class PackagerConfiguration
 
     private $release_directory = 'releases';
     private $prefix_release_package = 'module_';
-    private $config_directory = 'configuration';
+    private $config_directory_name = 'configuration';
     private $config_template_file = 'templates.php';
     private $config_installdefs_file = 'installdefs.php';
-    private $src_directory = 'src';
-    private $pkg_directory = 'pkg';
+    private $src_directory_name = 'src';
+    private $pkg_directory_name = 'pkg';
     private $manifest_file = 'manifest.php';
 
     private $files_to_remove_from_zip = array(
@@ -88,25 +88,25 @@ class PackagerConfiguration
     /**
      * @return string
      */
-    public function getConfigDirectory()
+    public function getConfigDirectoryName()
     {
-        return $this->config_directory;
+        return $this->config_directory_name;
     }
 
     /**
      * @return string
      */
-    public function getSrcDirectory()
+    public function getSrcDirectoryName()
     {
-        return $this->src_directory;
+        return $this->src_directory_name;
     }
 
     /**
      * @return string
      */
-    public function getPkgDirectory()
+    public function getPkgDirectoryName()
     {
-        return $this->pkg_directory;
+        return $this->pkg_directory_name;
     }
 
     /**
@@ -241,6 +241,18 @@ class PackagerConfiguration
      */
     public function getPathToManifestFile()
     {
-        return $this->buildSimplePath($this->getConfigDirectory(), $this->getManifestFile());
+        return $this->buildSimplePath($this->getConfigDirectoryName(), $this->getManifestFile());
     }
+
+    public function getPathToConfigurationDir()
+    {
+        return $this->buildSimplePath($this->getConfigDirectoryName());
+    }
+
+    public function getPathToPkgDir()
+    {
+        return $this->buildSimplePath($this->getPkgDirectoryName());
+    }
+
+
 }
