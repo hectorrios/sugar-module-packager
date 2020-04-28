@@ -19,7 +19,7 @@ class PackagerService
 
 
     /* @var PackagerConfiguration $config */
-    //private $config;
+    //private $baseManifest;
 
     /**
      * PackagerService constructor.
@@ -40,21 +40,37 @@ class PackagerService
 
     /**
      * @param $pathToManifestFile
+     * @param string $version version string of the Package
      * @return array|bool containing the array contents of the manifest.php file or False if
      * the file does not exist.
      * @throws ManifestIncompleteException
      */
-    public function getManifestFileContents($pathToManifestFile)
+    public function getManifestFileContents($pathToManifestFile, $version)
     {
         $manifest = array();
 
-        //if (!file_exists($this->buildSimplePath($pathToManifestFile))) {
         if (!file_exists($pathToManifestFile)) {
             //throw new ManifestIncompleteException('Manifest at path: ' . $pathToManifestFile . ' does not exist');
             return false;
         }
 
+        $manifestBase = array(
+            'version' => $version,
+            'is_uninstallable' => true,
+            'published_date' => date('Y-m-d H:i:s'),
+            'type' => 'module',
+        );
+
         require($pathToManifestFile);
+
+        if (!isset($manifest) || !is_array($manifest)) {
+            throw new ManifestIncompleteException($pathToManifestFile .
+                ' was loaded but a $manifest variable was not present or is not defined ' .
+                'as an array');
+        }
+
+        //merge the base with the existing just loaded manifest
+        $manifest = array_replace_recursive($manifestBase, $manifest);
 
         try {
             $this->validateManifestArray($manifest);
