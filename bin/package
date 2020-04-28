@@ -13,20 +13,32 @@ if (is_file($autoload = getcwd() . '/vendor/autoload.php')) {
 }
 
 use SugarModulePackager\PackageOutput;
+use SugarModulePackager\Packager;
+use SugarModulePackager\PackagerConfiguration;
+use SugarModulePackager\PackagerService;
 use SugarModulePackager\PackageUtils;
-use SugarModulePackager\FileReaderWriter;
+use SugarModulePackager\FileReaderWriterImpl;
 use SugarModulePackager\EchoMessageOutputter;
 
-$messageOutputter = new EchoMessageOutputter();
+$messenger = new EchoMessageOutputter();
 
 if (empty($argv[1])) {
     //PackageOutput::message('Use '.$argv[0].' [version]');
-    $messageOutputter->message('Use '.$argv[0].' [version]');
+    $messenger->message('Use '.$argv[0].' [version]');
     return;
 }
 
 //PackageUtils::build($argv[1]);
-$packager = new \SugarModulePackager\Packager(new FileReaderWriter(), $messageOutputter);
-$packager->build($argv[1]);
+$config = new PackagerConfiguration($argv[1], Packager::SW_NAME, Packager::SW_VERSION);
+$packagerService = new PackagerService(new FileReaderWriterImpl());
+$packager = new Packager($packagerService, $messenger, $config);
+
+try {
+    $packager->build($argv[1]);
+} catch (\SugarModulePackager\IllegalStateException $e) {
+    $messenger->message($e->getMessage());
+} catch (\SugarModulePackager\ManifestIncompleteException $e) {
+    $messenger->message($e->getMessage());
+}
 
 exit(0);
