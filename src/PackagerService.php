@@ -17,10 +17,6 @@ class PackagerService
     /* @var ReaderWriter $fileReaderWriterService */
     private $fileReaderWriterService;
 
-
-    /* @var PackagerConfiguration $config */
-    //private $baseManifest;
-
     /**
      * PackagerService constructor.
      * @param ReaderWriter $fileReaderWriterService
@@ -28,7 +24,6 @@ class PackagerService
     public function __construct(ReaderWriter $fileReaderWriterService)
     {
         $this->fileReaderWriterService = $fileReaderWriterService;
-//        $this->config = $config;
     }
 
     public function createPackagerDirectories(...$directories)
@@ -50,7 +45,6 @@ class PackagerService
         $manifest = array();
 
         if (!file_exists($pathToManifestFile)) {
-            //throw new ManifestIncompleteException('Manifest at path: ' . $pathToManifestFile . ' does not exist');
             return false;
         }
 
@@ -123,64 +117,6 @@ class PackagerService
             unlink($pkg_file->getPathname());
         }
     }
-
-
-    /**
-     * @param string $srcDirectory the assumption is that the path passed is absolute path
-     * @param mixed ...$filesToExclude
-     * @return array|mixed
-     * @throws InvalidArgumentException
-     */
-//    public function getModuleFilesFromSrc($srcDirectory, ...$filesToExclude)
-//    {
-//        //a check for the possible case that resolving the path may have produced False
-//        if ($srcDirectory === false) {
-//            throw new InvalidArgumentException('the src directory must be a string');
-//        }
-//
-//        $files_iterator = $this->getDirectoryContentIterator($srcDirectory);
-//        $result = array();
-//        //$path = realpath($path);
-//
-//        if (empty($files_iterator) || empty($srcDirectory)) {
-//            return $result;
-//        }
-//
-//        /* @var SplFileInfo $file */
-//        foreach ($files_iterator as $name => $file) {
-//            if ($file->isFile()) {
-////                $file_realpath = $file->getRealPath();
-//                $file_realpath = $file->getPathname();
-//
-//                if (in_array($file->getFilename(), $filesToExclude)) {
-//                    continue;
-//                }
-//
-//                $file_relative = '' . str_replace($srcDirectory . '/', '', $file_realpath);
-////                echo 'The file relative value is: ' . $file_relative . PHP_EOL;
-//                $result[$file_relative] = $file_realpath;
-//            }
-//        }
-//
-//        return $result;
-//
-//    }
-
-//    public function copySrcDirectoryToDestinationDir($srcDirectory, $destDirectory)
-//    {
-//        // copy into pkg all src files
-//        $common_files_list = $this->getModuleFilesFromSrc($srcDirectory);
-//        if (!empty($common_files_list)) {
-//            foreach ($common_files_list as $file_relative => $file_realpath) {
-//                $destination_directory = $destDirectory . DIRECTORY_SEPARATOR .
-//                    dirname($file_relative) . DIRECTORY_SEPARATOR;
-//
-//                $this->fileReaderWriterService->createDirectory($destination_directory);
-//                $this->fileReaderWriterService->copyFile($file_realpath,
-//                    $destination_directory . basename($file_realpath));
-//            }
-//        }
-//    }
 
     /**
      * @param $templateFileConfigPath
@@ -284,7 +220,6 @@ class PackagerService
                                        array $pkgDirFiles, PackagerConfiguration $config, ZipArchive $archiver)
     {
         $messenger->message('Creating ' . $zipFile . '...');
-//        $zip = new ZipArchive();
         $archiver->open($zipFile, ZipArchive::CREATE);
 
         // add all pkg dir files to zip
@@ -314,9 +249,7 @@ class PackagerService
         $installdefs_original = array();
         $installdefs_generated = array('copy' => array());
 
-//        if (!empty($manifest['id'])) {
         $installdefs_original['id'] = $id;
-//        }
 
         if (!empty($customInstalldefFilePath) && file_exists($customInstalldefFilePath)) {
             require($customInstalldefFilePath);
