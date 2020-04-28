@@ -314,9 +314,9 @@ class PackagerService
         $installdefs_original = array();
         $installdefs_generated = array('copy' => array());
 
-        if (!empty($manifest['id'])) {
-            $installdefs_original['id'] = $manifest['id'];
-        }
+//        if (!empty($manifest['id'])) {
+        $installdefs_original['id'] = $id;
+//        }
 
         if (!empty($customInstalldefFilePath) && file_exists($customInstalldefFilePath)) {
             require($customInstalldefFilePath);
