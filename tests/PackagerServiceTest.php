@@ -40,7 +40,7 @@ class PackagerServiceTest extends TestCase
         //$this->expectException(ManifestIncompleteException::class);
 
         $contents = $service->getManifestFileContents(vfsStream::url($this->rootDirName .
-            DIRECTORY_SEPARATOR . 'manifest.php'));
+            DIRECTORY_SEPARATOR . 'manifest.php'), '0.0.1');
         $this->assertIsBool($contents);
         $this->assertFalse($contents);
     }
@@ -53,7 +53,7 @@ class PackagerServiceTest extends TestCase
         //Create a base template lacking all of the main thing
         $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = 'id_001';".PHP_EOL.
             "\$manifest['built_in_version'] = '9.3';".PHP_EOL.
-            "\$manifest['version'] = '0.0.1';".PHP_EOL.
+            //"\$manifest['version'] = '0.0.1';".PHP_EOL.
             "\$manifest['name'] = 'test case';".PHP_EOL.
             "\$manifest['description'] = '';".PHP_EOL.
             "\$manifest['author'] = 'Sugar Partner';" . PHP_EOL .
@@ -70,10 +70,12 @@ class PackagerServiceTest extends TestCase
         $pService = new PackagerService($readerWriter);
         $contents =
             $pService->getManifestFileContents(
-                vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . $config->getManifestFile()));
+                vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . $config->getManifestFile()),
+                '0.0.1');
 
         $this->assertIsArray($contents, 'the contents retrieved should be an array');
         $this->assertArrayHasKey('author', $contents);
+        $this->assertArrayHasKey('version', $contents);
     }
 
     public function testGetManifestFileContentsWhereManifestFailsBasicValidation()
@@ -99,7 +101,7 @@ class PackagerServiceTest extends TestCase
         $pService = new PackagerService(new FileReaderWriterImpl());
         $this->expectException(ManifestIncompleteException::class);
         $contents = $pService->getManifestFileContents(vfsStream::url($this->rootDirName .DIRECTORY_SEPARATOR .
-            'configuration' . DIRECTORY_SEPARATOR . $config->getManifestFile()));
+            'configuration' . DIRECTORY_SEPARATOR . $config->getManifestFile()), '0.0.1');
 
     }
 
