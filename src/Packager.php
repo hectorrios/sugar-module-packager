@@ -301,7 +301,7 @@ class Packager
 
         try {
             $manifest = $this->packagerService->getManifestFileContents(
-                $this->config->getPathToManifestFile());
+                $this->config->getPathToManifestFile(), $version);
             //$manifest = $this->getManifest($version);
             if (is_bool($manifest) && !$manifest) {
                 $this->packagerService->createSkeletonManifestFile($this->config);
