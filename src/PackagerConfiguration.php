@@ -86,11 +86,27 @@ class PackagerConfiguration
     }
 
     /**
+     * @param string $release_directory_name
+     */
+    public function setReleaseDirectoryName($release_directory_name)
+    {
+        $this->release_directory_name = $release_directory_name;
+    }
+
+    /**
      * @return string
      */
     public function getConfigDirectoryName()
     {
         return $this->config_directory_name;
+    }
+
+    /**
+     * @param string $config_directory_name
+     */
+    public function setConfigDirectoryName($config_directory_name)
+    {
+        $this->config_directory_name = $config_directory_name;
     }
 
     /**
@@ -102,11 +118,27 @@ class PackagerConfiguration
     }
 
     /**
+     * @param string $src_directory_name
+     */
+    public function setSrcDirectoryName($src_directory_name)
+    {
+        $this->src_directory_name = $src_directory_name;
+    }
+
+    /**
      * @return string
      */
     public function getPkgDirectoryName()
     {
         return $this->pkg_directory_name;
+    }
+
+    /**
+     * @param string $pkg_directory_name
+     */
+    public function setPkgDirectoryName($pkg_directory_name)
+    {
+        $this->pkg_directory_name = $pkg_directory_name;
     }
 
     /**
