@@ -215,5 +215,129 @@ class PackagerTest extends TestCase
         $packager->build('1.0.2');
     }
 
+    public function testLoadTemplateConfiguration()
+    {
+        $config = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
+            Packager::SW_VERSION, vfsStream::url($this->rootDirName));
 
+        $templString = '$templates[\'template1\'] = array(
+                \'directory_pattern\' => \'custom/Extension/modules/{MODULENAME}/Ext\',
+                \'modules\' => array(
+                    \'Contacts\' => \'Contact\',
+                    \'Accounts\' => \'Account\',
+                    \'Cases\' => \'Case\',
+                    \'Opportunities\' => \'Opportunity\',
+                )
+            );';
+
+        $structure = array(
+            'src' => array(
+
+            ),
+            'configuration' => array(
+                'manifest.php' => '<?php echo "my manifest file";',
+                'templates.php' => '<?php PHP_EOL; ' . $templString,
+            ),
+            'template1' => array(),
+        );
+
+        vfsStream::create($structure);
+
+        $messenger = new MockMessageOutputter();
+
+       //stub out PackagerService
+        $mockPService = $this->createMock(PackagerService::class);
+
+        $mockPService->method('getManifestFileContents')
+            ->will($this->returnValue(['id' => '001_test']));
+
+        $mockPService->method('getFilesFromDirectory')
+            ->will($this->returnValue([]));
+
+        $mockPService->method('buildFinalManifest')
+            ->withAnyParameters()
+            ->will($this->returnValue(array()));
+
+        $mockPService->method('buildUpInstallDefs')
+            ->will($this->returnValue([]));
+
+        $expectedTemplate = [
+            'template1' => [
+                'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
+                'modules' => [
+                    'Contacts' => 'Contact',
+                    'Accounts' => 'Account',
+                    'Cases' => 'Case',
+                    'Opportunities' => 'Opportunity',
+                ],
+            ],
+        ];
+
+        $mockPService->method('loadTemplateConfiguration')
+            ->will($this->returnValue($expectedTemplate));
+
+        $mockPService->expects($this->once())
+            ->method('generateTemplatedConfiguredFiles')
+            ->with($this->equalTo($expectedTemplate));
+
+
+        $packager = new Packager($mockPService, $messenger, $config);
+
+        $packager->build('0.2.6');
+    }
+
+    public function testGenerateTemplatedConfiguredFiles()
+    {
+        //test that this method gets called once
+        $config = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
+            Packager::SW_VERSION, vfsStream::url($this->rootDirName));
+
+        $messenger = new MockMessageOutputter();
+
+        $structure = array(
+            'src' => array(
+
+            ),
+            'configuration' => array(
+                'manifest.php' => '<?php echo "my manifest file";',
+                'templates.php' => '<?php PHP_EOL; ',
+            ),
+            'template1' => array(),
+        );
+
+        vfsStream::create($structure);
+
+        $expectedTemplate = [
+            'template1' => [
+                'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
+                'modules' => [
+                    'Contacts' => 'Contact',
+                    'Accounts' => 'Account',
+                    'Cases' => 'Case',
+                    'Opportunities' => 'Opportunity',
+                ],
+            ],
+        ];
+
+        $mockService = $this->createMock(PackagerService::class);
+
+        $mockService->method('getManifestFileContents')
+            ->will($this->returnValue(array('id' => 'sugar_test')));
+
+        $mockService->method('buildUpInstallDefs')
+            ->will($this->returnValue(array()));
+
+        $mockService->method('loadTemplateConfiguration')
+            ->will($this->returnValue($expectedTemplate));
+
+        $mockService->method('getFilesFromDirectory')
+            ->will($this->returnValue(array()));
+
+        $mockService->expects($this->once())
+            ->method('generateTemplatedConfiguredFiles');
+
+        $packager = new Packager($mockService, $messenger, $config);
+        $packager->build('0.0.4');
+
+    }
 }
