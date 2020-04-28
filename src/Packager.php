@@ -201,10 +201,10 @@ class Packager
 
     /**
      * @param $file_relative
-     * @param $custom_installdefs
+     * @param array $installdefs
      * @return bool
      */
-    protected function shouldAddToManifestCopy($file_relative, $custom_installdefs)
+    protected function shouldAddToManifestCopy($file_relative, $installdefs)
     {
         if (!in_array(basename($file_relative), $this->config->getFilesToRemoveFromManifestCopy())) {
             // check and dont copy all *_execute and *_uninstall installdefs keyword files
@@ -334,9 +334,12 @@ class Packager
 
         $installDefs = $this->packagerService->buildUpInstallDefs(
             $this->packagerService->getFilesFromDirectory($this->config->getPathToPkgDir()),
-            $manifest['id'], $this->messageOutputter, function($file_relative, $customInstallDefs) {
-            $this->shouldAddToManifestCopy($file_relative, $customInstallDefs);
-        }
+            $manifest['id'],
+            $this->messageOutputter,
+            function($file_relative, $customInstallDefs) {
+                return $this->shouldAddToManifestCopy($file_relative, $customInstallDefs);
+            },
+            $this->config->getPathToConfigInstalldefsFile()
         );
 
         $pkgDirFiles =
