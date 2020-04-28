@@ -195,7 +195,14 @@ class PackagerService
         return $templates;
     }
 
-
+    /**
+     * uses the passed in templates configuration array to copy files from the directory
+     * specified in the configuration to the directories in the "pkg" directory that match
+     * the directory_pattern in the templates configuration array.
+     * @param array $templates
+     * @param MessageOutputter $messenger
+     * @param string $pkgDirectory
+     */
     public function generateTemplatedConfiguredFiles(array $templates, MessageOutputter $messenger, $pkgDirectory)
     {
         foreach ($templates as $template_src_directory => $template_values) {
