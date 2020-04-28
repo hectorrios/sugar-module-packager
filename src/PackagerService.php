@@ -100,7 +100,8 @@ class PackagerService
         $this->fileReaderWriterService->writeFile($configuration->getPathToManifestFile(),
                 $manifestContent);
 
-        $manifestContents = $this->getManifestFileContents($configuration->getPathToManifestFile());
+        $manifestContents = $this->getManifestFileContents($configuration->getPathToManifestFile(),
+            $configuration->getVersion());
         try {
             $this->validateManifestArray($manifestContents);
         } catch (ManifestIncompleteException $e) {
