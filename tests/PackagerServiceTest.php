@@ -30,14 +30,10 @@ class PackagerServiceTest extends TestCase
         $this->rootDir = vfsStream::setup($this->rootDirName);
     }
 
-
     public function testGetManifestFileContentsNonExistingManifest()
     {
         $readerWriter = new FileReaderWriterImpl(vfsStream::url($this->rootDirName));
-//        $config = new PackagerConfiguration('0.0.1');
         $service = new PackagerService($readerWriter);
-
-        //$this->expectException(ManifestIncompleteException::class);
 
         $contents = $service->getManifestFileContents(vfsStream::url($this->rootDirName .
             DIRECTORY_SEPARATOR . 'manifest.php'), '0.0.1');
@@ -187,36 +183,6 @@ class PackagerServiceTest extends TestCase
         //echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
     }
 
-
-//    public function testCopySrcDirectoryToDestinationDir()
-//    {
-//        Create the src directory structure with just the custom folder
-//        $structure = array(
-//            'src' => array(
-//                'custom' => array(
-//                    'clients' => array(
-//                        'base' => array(
-//                            'api' => array(
-//                                'WOM2Api.php' => '<?php echo "Hello";',
-//                            ),
-//                        ),
-//                    ),
-//                ),
-//            ),
-//            'pkg' => array(),
-//        );
-//
-//        vfsStream::create($structure);
-//        echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
-//        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
-//        $pService = new PackagerService($readerWriter);
-//
-//        $srcDir = vfsStream::url('exampleDir/src');
-//        $readerWriter->addPathMapping($srcDir, $srcDir);
-//        $pService->copySrcDirectoryToDestinationDir($srcDir, vfsStream::url('exampleDir/pkg'));
-//        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/WOM2Api.php'));
-//    }
-
     public function testLoadTemplateConfigWithNoTemplateConfig()
     {
         $readerWriter = new FileReaderWriterImpl();
@@ -244,7 +210,6 @@ class PackagerServiceTest extends TestCase
 
     public function testLoadTemplateConfigurationWithExistingTemplateConfigButIncorrect()
     {
-
         $readerWriter = new FileReaderWriterImpl();
         $pService = new PackagerService($readerWriter);
 
@@ -586,13 +551,14 @@ $installdefs[\'beans\'] = array (
 
         $this->assertIsString($output);
         $this->assertNotEmpty($output);
-//        echo $output . PHP_EOL;
+
         $manifest = array();
         $installdefs = array();
         //Now let's write it out to file and then include it to make some assertions on the contents
         $readerWriter->writeFile(vfsStream::url($this->rootDirName . '/myManifest.php'), $output);
-//        unset($manifest);
+
         require(vfsStream::url($this->rootDirName . '/myManifest.php'));
+
         $this->assertTrue($this->rootDir->hasChild('myManifest.php'));
         $this->assertIsArray($manifest);
         $this->assertIsArray($installdefs);
@@ -721,7 +687,6 @@ $installdefs[\'beans\'] = array (
 
         $config = new PackagerConfiguration('0.0.1', $this->softwareVersion, $this->softwareName,
             vfsStream::url($this->rootDirName));
-//        $config->setConfigDirectory(vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'config'));
 
         $this->assertFalse($this->rootDir->hasChild('configuration/manifest.php'));
         $pService = new PackagerService(new ReaderWriterTestDecorator(new FileReaderWriterImpl()));
@@ -774,7 +739,6 @@ $installdefs[\'beans\'] = array (
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/WOM2Api.php'));
 
-
     }
 
     public function testGetFilesFromDirectory()
@@ -822,7 +786,6 @@ $installdefs[\'beans\'] = array (
             var_export($installdefs, true),
             preg_replace('(\s+\d+\s=>)', '', var_export($installdefs_copy, true))
         );
-
 
     }
 }
