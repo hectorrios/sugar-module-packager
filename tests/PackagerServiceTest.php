@@ -681,7 +681,7 @@ $installdefs[\'beans\'] = array (
         $readerWriter->addPathMapping('pkg', vfsStream::url($this->rootDirName . '/pkg'));
 
         $listOfFiles = $readerWriter->getFilesFromDirectory(vfsStream::url($this->rootDirName . '/pkg'));
-        echo print_r($listOfFiles, true) . PHP_EOL;
+        //echo print_r($listOfFiles, true) . PHP_EOL;
         $this->assertCount(2, $listOfFiles);
 
         $manifestContent = $this->constructSampleFinalManifest($installdefsLocal, $manifestLocal);
