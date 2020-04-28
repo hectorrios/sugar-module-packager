@@ -475,7 +475,8 @@ foreach($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key 
 
         $this->assertIsArray($finalInstallDefs);
         $this->assertArrayHasKey('copy', $finalInstallDefs);
-        $this->assertCount(1, $finalInstallDefs);
+        $this->assertCount(2, $finalInstallDefs);
+        $this->assertCount(1, $finalInstallDefs['copy']);
     }
 
     public function testBuildUpInstallDefsWithCustomInstallDefs()
@@ -532,7 +533,8 @@ $installdefs[\'beans\'] = array (
 
         $this->assertIsArray($finalInstallDefs);
         $this->assertArrayHasKey('copy', $finalInstallDefs);
-        $this->assertCount(2, $finalInstallDefs);
+        $this->assertCount(3, $finalInstallDefs);
+        $this->assertCount(2, $finalInstallDefs['copy']);
         //echo print_r($finalInstallDefs, true);
     }
 
