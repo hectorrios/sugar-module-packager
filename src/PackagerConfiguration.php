@@ -301,5 +301,10 @@ class PackagerConfiguration
         return $this->buildSimplePath($this->getReleaseDirectoryName());
     }
 
+    public function getPathToConfigInstalldefsFile()
+    {
+        return $this->buildSimplePath($this->getConfigDirectoryName(), $this->getConfigInstalldefsFile());
+    }
+
 
 }
