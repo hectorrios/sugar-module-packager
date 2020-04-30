@@ -18,6 +18,7 @@ class PackagerConfiguration
     private $src_directory_name = 'src';
     private $pkg_directory_name = 'pkg';
     private $manifest_file = 'manifest.php';
+    private $templates_directory_name = 'templates';
 
     private $files_to_remove_from_zip = array(
         '.DS_Store',
@@ -306,5 +307,19 @@ class PackagerConfiguration
         return $this->buildSimplePath($this->getConfigDirectoryName(), $this->getConfigInstalldefsFile());
     }
 
+    /**
+     * @return string
+     */
+    public function getTemplatesDirectoryName()
+    {
+        return $this->templates_directory_name;
+    }
 
+    /**
+     * @return string
+     */
+    public function getPathToTemplatesDir()
+    {
+        return $this->buildSimplePath($this->getTemplatesDirectoryName());
+    }
 }
