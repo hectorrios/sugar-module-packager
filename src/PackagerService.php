@@ -196,11 +196,18 @@ class PackagerService
                     $messenger->message('* Generating '.$destination_directory . basename($file_relative));
 
                     $this->fileReaderWriterService->createDirectory($destination_directory);
+
                     $this->fileReaderWriterService->copyFile($file_realpath,
                         $destination_directory . basename($file_relative));
 
                     // modify content
                     $content = $this->fileReaderWriterService->readFile($destination_directory . basename($file_relative));
+
+                    //Was the file there? Let's make sure by checking that the file contents are not blank
+                    if (empty($content)) {
+                        return;
+                    }
+
                     $content = str_replace('{MODULENAME}', $module, $content);
                     $content = str_replace('{OBJECTNAME}', $object, $content);
                     $this->fileReaderWriterService->writeFile($destination_directory . basename($file_relative), $content);
