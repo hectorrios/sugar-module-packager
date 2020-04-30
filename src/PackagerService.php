@@ -178,6 +178,7 @@ class PackagerService
                 return;
             }
 
+            //for an OS that does not recognize "/" as a directory separator, e.g. Windows
             $template_dst_directory = str_replace('/', DIRECTORY_SEPARATOR, $template_dst_directory);
 
             foreach ($modules as $module => $object) {
