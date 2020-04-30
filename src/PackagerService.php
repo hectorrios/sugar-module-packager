@@ -8,6 +8,11 @@ use InvalidArgumentException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
+use Twig\Environment;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
+use Twig\Loader\FilesystemLoader;
 use ZipArchive;
 
 class PackagerService
@@ -152,34 +157,60 @@ class PackagerService
      * uses the passed in templates configuration array to copy files from the directory
      * specified in the configuration to the directories in the "pkg" directory that match
      * the directory_pattern in the templates configuration array.
-     * @param array $templates
+     * @param array $templatesConfig the contents of configurations/templates.php
      * @param MessageOutputter $messenger
-     * @param string $pkgDirectory
+     * @param PackagerConfiguration $config
      */
-    public function generateTemplatedConfiguredFiles(array $templates, MessageOutputter $messenger, $pkgDirectory)
+    public function generateTemplatedConfiguredFiles(array $templatesConfig, MessageOutputter $messenger,
+                                                     PackagerConfiguration $config)
     {
-        foreach ($templates as $template_src_directory => $template_values) {
+        //Before starting as a precaution let's make sure that our standards templates directory is
+        //presents
+        if (!file_exists($config->getPathToTemplatesDir())) {
+            $messenger->message('the base templates dir: ' . $config->getTemplatesDirectoryName() .
+                ' does not exist.');
+            return;
+        }
+
+        foreach ($templatesConfig as $templateDir => $template_values) {
 
             $template_dst_directory = $template_values['directory_pattern'];
             $modules = $template_values['modules'];
 
             //resolve the template source directory and handle the case that the directory might not be
             //present
-            $resolvedTemplateSrcDir = $this->fileReaderWriterService->resolvePath($template_src_directory);
+            $resolvedTemplateSrcDir =
+                $this->fileReaderWriterService->resolvePath($config->getPathToTemplatesDir() .
+                    DIRECTORY_SEPARATOR . $templateDir);
             if (!$resolvedTemplateSrcDir) {
-                $messenger->message('The ' . $template_src_directory . ' was not found.');
+                $messenger->message('The templates directory: ' . $resolvedTemplateSrcDir . ' was not found.');
                 return;
             }
 
             // generate runtime files based on the templates
-            $template_files_list = $this->fileReaderWriterService->getFilesFromDirectory($resolvedTemplateSrcDir);
-
+            $template_files_list =
+                $this->fileReaderWriterService->getFilesFromDirectory($resolvedTemplateSrcDir);
+            $messenger->message(print_r($template_files_list, true));
             if (empty($template_files_list)) {
                 return;
             }
 
             //for an OS that does not recognize "/" as a directory separator, e.g. Windows
             $template_dst_directory = str_replace('/', DIRECTORY_SEPARATOR, $template_dst_directory);
+            $templateDirectories = $this->getTemplateDirectories($template_files_list);
+
+            /*
+             * Before entering the nested for loops that will generate the template files,
+             * we need to instantiate the TWIG Loader and Environment and finally grab the
+             * template_data from templates config
+             */
+            $loader = new FilesystemLoader($templateDirectories, $config->getPathToTemplatesDir());
+            $twig = new Environment($loader);
+
+            $templateContext = array();
+            if (array_key_exists('template_context', $template_values)) {
+                $templateData = $template_values['template_context'];
+            }
 
             foreach ($modules as $module => $object) {
 
@@ -190,27 +221,48 @@ class PackagerService
 
                 foreach ($template_files_list as $file_relative => $file_realpath) {
                     // build destination
-                    $destination_directory = $pkgDirectory . DIRECTORY_SEPARATOR . $current_module_destination .
-                        DIRECTORY_SEPARATOR . dirname($file_relative) . DIRECTORY_SEPARATOR;
+                    $destination_directory = $config->getPathToPkgDir() . DIRECTORY_SEPARATOR .
+                        $current_module_destination . DIRECTORY_SEPARATOR . dirname($file_relative) .
+                        DIRECTORY_SEPARATOR;
 
                     $messenger->message('* Generating '.$destination_directory . basename($file_relative));
 
-                    $this->fileReaderWriterService->createDirectory($destination_directory);
-
-                    $this->fileReaderWriterService->copyFile($file_realpath,
-                        $destination_directory . basename($file_relative));
-
-                    // modify content
+                    //Read the file
                     $content = $this->fileReaderWriterService->readFile($destination_directory . basename($file_relative));
 
-                    //Was the file there? Let's make sure by checking that the file contents are not blank
-                    if (empty($content)) {
+                    $templateName = basename($file_relative);
+                    try {
+                        $mergedContent = $twig->render($templateName, $templateContext);
+                    } catch (LoaderError $e) {
+                        //this should not be an issue since we've verified that the file already
+                        //exists
+                        $messenger->message('Error: unable to load template: ' . $templateName . ' the error is: ' .
+                            $e->getMessage());
+                        return;
+                    } catch (RuntimeError $e) {
+                        $messenger->message($e->getMessage());
+                        return;
+                    } catch (SyntaxError $e) {
+                        $messenger->message('an error occurred merging the template context with template: ' .
+                            $templateName . ', error is: ' . $e->getMessage());
                         return;
                     }
 
-                    $content = str_replace('{MODULENAME}', $module, $content);
-                    $content = str_replace('{OBJECTNAME}', $object, $content);
-                    $this->fileReaderWriterService->writeFile($destination_directory . basename($file_relative), $content);
+                    //Was the file there? Let's make sure by checking that the file contents are not blank
+                    if (empty($mergedContent)) {
+                        return;
+                    }
+
+                    //$content = str_replace('{MODULENAME}', $module, $content);
+                    //$content = str_replace('{OBJECTNAME}', $object, $content);
+                    $this->fileReaderWriterService->createDirectory($destination_directory);
+
+                    //$this->fileReaderWriterService->copyFile($file_realpath,
+                    //    $destination_directory . basename($file_relative));
+
+
+                    $this->fileReaderWriterService->writeFile($destination_directory . basename($file_relative),
+                        $mergedContent);
                 }
             }
         }
@@ -324,6 +376,7 @@ class PackagerService
             $config->getPathToSrcDir());
         $this->getFileReaderWriterService()->createDirectory(
             $config->getPathToPkgDir());
+        $this->getFileReaderWriterService()->createDirectory($config->getPathToTemplatesDir());
     }
 
     public function copySrcIntoPkg(PackagerConfiguration $config)
@@ -354,5 +407,18 @@ class PackagerService
 
             throw new ManifestIncompleteException('manifest file array failed validation');
         }
+    }
+
+    private function getTemplateDirectories(array $templateFileList)
+    {
+        $directories = array();
+        foreach($templateFileList as $relativePath) {
+            if (in_array(dirname($relativePath), $directories)) {
+                continue;
+            }
+            $directories[] = dirname($relativePath);
+        }
+
+        return $directories;
     }
 }
