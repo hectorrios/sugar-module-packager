@@ -58,8 +58,22 @@ A simple code example on how to leverage this library can be found on: https://g
     * Optionally, for more complex use-cases, it is possible to define code templating actions to be completed by the packager across multiple modules, within the `templates.php` file
         * It is possible to define multiple template sections based on multiple template actions and patterns to replicate across modules
             * The array keys of the templates configuration array define the package directories to read files from, when generating the output
-            * The array content defines the `directory_pattern` tree prefix, that will be appendedd as a prefix of every file path of the local directory
+            * The array content defines the `directory_pattern` tree prefix, that will be appended as a prefix of every file path of the local directory
                 * The string `{MODULENAME}` within the `directory_pattern` templates configuration option, will be replaced with the current module name during package generation
-            * The array content defines the `modules` list that must contain the module names as array keys and the object name as array values
+            * The array content defines the `modules` list that must contain the module names as array keys, and the object name as array values
                 * The string `{MODULENAME}` within your local directory template files, will be replaced during package generation as the configuration's module list array key (the module name, usually plural eg: `Accounts`)
                 * The string `{OBJECTNAME}` within your local directory template files, will be replaced during package generation as the configuration's module list array value (the object name of the module, usually singular eg: `Account`)
+
+## Running Unit Tests
+
+PHPUnit unit tests are located in the `tests` directory. PHPUnit and other dependencies are defined in `composer.json`
+and will come down when running 
+```
+composer install
+```
+
+To run the full suite of tests execute the following command from the root directory
+```
+vendor/bin/phpunit
+```
+If all tests pass, then a "green" bar with "Ok" will be displayed.
