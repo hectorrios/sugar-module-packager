@@ -190,7 +190,6 @@ class PackagerService
             // generate runtime files based on the templates
             $template_files_list =
                 $this->fileReaderWriterService->getFilesFromDirectory($resolvedTemplateSrcDir);
-            $messenger->message(print_r($template_files_list, true));
             if (empty($template_files_list)) {
                 return;
             }
@@ -230,9 +229,6 @@ class PackagerService
 
                     $messenger->message('* Generating '.$destination_directory . basename($file_relative));
 
-                    //Read the file
-                    $content = $this->fileReaderWriterService->readFile($destination_directory . basename($file_relative));
-
                     $templateName = basename($file_relative);
                     try {
                         $mergedContent = $twig->render($templateName, $templateContext);
@@ -256,13 +252,7 @@ class PackagerService
                         return;
                     }
 
-                    //$content = str_replace('{MODULENAME}', $module, $content);
-                    //$content = str_replace('{OBJECTNAME}', $object, $content);
                     $this->fileReaderWriterService->createDirectory($destination_directory);
-
-                    //$this->fileReaderWriterService->copyFile($file_realpath,
-                    //    $destination_directory . basename($file_relative));
-
 
                     $this->fileReaderWriterService->writeFile($destination_directory . basename($file_relative),
                         $mergedContent);
