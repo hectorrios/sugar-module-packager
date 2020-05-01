@@ -216,6 +216,9 @@ class PackagerService
 
                 $messenger->message('* Generating template files for module: ' . $module);
 
+                //set the current module into the template context
+                $templateContext['module'] = $module;
+
                 // replace "modulename" from path
                 $current_module_destination = str_replace('{MODULENAME}', $module, $template_dst_directory);
 
