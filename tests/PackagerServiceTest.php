@@ -13,6 +13,9 @@ use SugarModulePackager\PackagerConfiguration;
 use SugarModulePackager\PackagerService;
 use SugarModulePackager\Test\Mocks\MockMessageOutputter;
 use SugarModulePackager\Test\Mocks\ReaderWriterTestDecorator;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
+use Twig\Loader\FilesystemLoader;
 
 class PackagerServiceTest extends TestCase
 {
@@ -111,6 +114,7 @@ class PackagerServiceTest extends TestCase
             vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'releases' ),
             vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'src' ),
             vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'pkg' ),
+
         ];
 
         $pService->createPackagerDirectories(...$directories);
@@ -296,18 +300,22 @@ class PackagerServiceTest extends TestCase
         $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
         $pService = new PackagerService($readerWriter);
 
+        $config = new PackagerConfiguration('0.0.6', $this->softwareName, $this->softwareVersion,
+            $this->rootDir->url());
+
         $templates['template1'] = array(
                 'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
                 'modules' => array(
                     'Contacts' => 'Contact',
                     'Accounts' => 'Account',
                     'Cases' => 'Case',
-                    'Opportunities' => 'Oportunity',
+                    'Opportunities' => 'Opportunity',
                 )
             );
 
         $structure = array(
             'src' => array(),
+            'templates' => array(),
             'configuration' => array(
                 'manifest.php' => '<?php echo "my manifest file";',
                 'templates.php' => '<?php PHP_EOL;',
@@ -316,15 +324,42 @@ class PackagerServiceTest extends TestCase
 
         vfsStream::create($structure);
         $messenger = new MockMessageOutputter();
-        $pService->generateTemplatedConfiguredFiles($templates, $messenger,
-            vfsStream::url($this->rootDirName . '/pkg'));
+        $pService->generateTemplatedConfiguredFiles($templates, $messenger, $config);
         $this->assertFalse($this->rootDir->hasChild('src/custom/Extension'));
-        $this->assertEquals('The template1 was not found.' . PHP_EOL, $messenger->getLastMessage());
+        $this->assertEquals('The templates directory:  was not found.' . PHP_EOL, $messenger->getLastMessage());
+    }
+
+    /**
+     * a test for documentation purposes on how to user 
+     */
+    public function testTwigSimpleExample()
+    {
+        $structure = array(
+            'templates' => array(
+                'sample_template.php' => '<?php $dictionary $viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'] = array();' . PHP_EOL,
+            )
+        );
+
+        vfsStream::create($structure);
+
+        $loader =
+            new FilesystemLoader(vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'templates'));
+
+        $twig = new Environment($loader);
+
+        $mergedContents = $twig->render('sample_template.php', array('module' => 'Contacts'));
+        $expectedContents = '<?php $dictionary $viewdefs[\'Contacts\'][\'base\'][\'view\'][\'record\'] = array();' . PHP_EOL;
+        $this->assertEquals($expectedContents, $mergedContents);
+
     }
 
     public function testGenerateTemplatedConfiguredFilesWithExistingTemplateSrcDirectory()
     {
-        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
+        $config = new PackagerConfiguration('0.0.6', $this->softwareName, $this->softwareVersion,
+            $this->rootDir->url());
+        echo 'In config the template dir name is: ' . $config->getTemplatesDirectoryName() . PHP_EOL;
+        echo 'In config the template dir path is: ' . $config->getPathToTemplatesDir() . PHP_EOL;
+        $readerWriter = new FileReaderWriterImpl();
         $pService = new PackagerService($readerWriter);
 
         $templates['template1'] = array(
@@ -333,8 +368,20 @@ class PackagerServiceTest extends TestCase
                 'Contacts' => 'Contact',
                 'Accounts' => 'Account',
                 'Cases' => 'Case',
-                'Opportunities' => 'Oportunity',
+                'Opportunities' => 'Opportunity',
             )
+        );
+        $templates['template2'] = array(
+            'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
+            'modules' => array(
+                'Contacts' => 'Contact',
+                'Accounts' => 'Account',
+                'Cases' => 'Case',
+                'Opportunities' => 'Opportunity',
+            ),
+            'template_context' => array(
+
+            ),
         );
 
         $structure = array(
@@ -344,45 +391,67 @@ class PackagerServiceTest extends TestCase
                 'manifest.php' => '<?php echo "my manifest file";',
                 'templates.php' => '<?php PHP_EOL;',
             ),
-            'template1' => array(
-                'clients' => array(
-                    'base' => array(
-                        'views' => array(
-                            'record' => array (
-                                'remove_copy.php' => '<?php
+            'templates' => array(
+                'template1' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'views' => array(
+                                'record' => array (
+                                    'remove_copy.php' => '<?php
 
 $module = \'{MODULENAME}\';
 
-foreach($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key => $value) {
+foreach($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key => $value) {
     if($value[\'type\'] == \'actiondropdown\' && $value[\'name\'] == \'main_dropdown\') {
         if(!empty($value[\'buttons\'])) {
             foreach($value[\'buttons\'] as $button_key => $button) {
                 if(!empty($button[\'name\']) && $button[\'name\'] == \'duplicate_button\') {
-                    unset($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'][$key][\'buttons\'][$button_key]);
+                    unset($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'][$key][\'buttons\'][$button_key]);
                 }
             }
         }
     }
 }',
+                                ),
                             ),
                         ),
                     ),
-                ),
+                ), //end template1
+                'template2' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'views' => array(
+                                'record' => array (
+                                    'remove_copy_2.php' => '<?php
+
+$module = \'{{module}}\';
+
+foreach($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key => $value) {
+    if($value[\'type\'] == \'actiondropdown\' && $value[\'name\'] == \'main_dropdown\') {
+        if(!empty($value[\'buttons\'])) {
+            foreach($value[\'buttons\'] as $button_key => $button) {
+                if(!empty($button[\'name\']) && $button[\'name\'] == \'duplicate_button\') {
+                    unset($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'][$key][\'buttons\'][$button_key]);
+                }
+            }
+        }
+    }
+}',
+                                ),
+                            ),
+                        ),
+                    ),
+                ), //end template2
             ),
         );
 
         vfsStream::create($structure);
 
-        $readerWriter->addPathMapping('template1',
-            vfsStream::url($this->rootDirName . '/template1'));
-        $readerWriter->addPathMapping(vfsStream::url($this->rootDirName . '/template1'),
-            vfsStream::url($this->rootDirName . '/template1'));
-
         $messenger = new MockMessageOutputter();
-        $pService->generateTemplatedConfiguredFiles($templates, $messenger,
-            vfsStream::url($this->rootDirName . '/pkg'));
+        $messenger->toggleEnableEcho();
+        //echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
+        $pService->generateTemplatedConfiguredFiles($templates, $messenger, $config);
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension'));
-//        echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Accounts'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Contacts'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Cases'));
@@ -392,6 +461,10 @@ foreach($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key 
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Cases/Ext/clients/base/views/record'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Opportunities/Ext/clients/base/views/record'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Accounts/Ext/clients/base/views/record/remove_copy.php'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Accounts/Ext/clients/base/views/record/remove_copy_2.php'));
+        $fileContents = $readerWriter->readFile($config->getPathToPkgDir() .
+            '/custom/Extension/modules/Cases/Ext/clients/base/views/record/remove_copy_2.php');
+        $this->assertGreaterThan(0, strpos($fileContents, '$module = \'Tasks\';'));
     }
 
     public function testBuildUpInstallDefsWithNoCustomInstallDefs()
@@ -708,6 +781,7 @@ $installdefs[\'beans\'] = array (
         $this->assertTrue($this->rootDir->hasChild('src'));
         $this->assertTrue($this->rootDir->hasChild('releases'));
         $this->assertTrue($this->rootDir->hasChild('configuration'));
+        $this->assertTrue($this->rootDir->hasChild('templates'));
     }
 
     public function testCopySrcIntoPkg()
