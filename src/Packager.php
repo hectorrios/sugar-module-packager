@@ -134,7 +134,7 @@ class Packager
 
         if (!empty($templates)) {
             $this->packagerService->generateTemplatedConfiguredFiles($templates, $this->messageOutputter,
-                $this->config->getPathToPkgDir());
+                $this->config);
         }
 
         $installDefs = $this->packagerService->buildUpInstallDefs(
