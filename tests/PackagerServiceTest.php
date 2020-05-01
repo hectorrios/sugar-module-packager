@@ -330,7 +330,9 @@ class PackagerServiceTest extends TestCase
     }
 
     /**
-     * a test for documentation purposes on how to user 
+     * a test for documentation purposes on how to use the Twig templating
+     * library in case there is a need to make changes to generateTemplatedConfiguredFiles
+     * on PackagerService
      */
     public function testTwigSimpleExample()
     {
