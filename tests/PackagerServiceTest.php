@@ -6,7 +6,9 @@ use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use org\bovigo\vfs\visitor\vfsStreamStructureVisitor;
 use PHPUnit\Framework\TestCase;
+use SugarModulePackager\Error\TemplateGenerationError;
 use SugarModulePackager\FileReaderWriterImpl;
+use SugarModulePackager\IllegalStateException;
 use SugarModulePackager\ManifestIncompleteException;
 use SugarModulePackager\Packager;
 use SugarModulePackager\PackagerConfiguration;
@@ -14,7 +16,6 @@ use SugarModulePackager\PackagerService;
 use SugarModulePackager\Test\Mocks\MockMessageOutputter;
 use SugarModulePackager\Test\Mocks\ReaderWriterTestDecorator;
 use Twig\Environment;
-use Twig\Loader\ArrayLoader;
 use Twig\Loader\FilesystemLoader;
 
 class PackagerServiceTest extends TestCase
@@ -295,6 +296,72 @@ class PackagerServiceTest extends TestCase
         $this->assertCount(4, $config['template1']['modules']);
     }
 
+    /**
+     * a test for documentation purposes on how to use the Twig templating
+     * library in case there is a need to make changes to generateTemplatedConfiguredFiles
+     * on PackagerService
+     */
+    public function testTwigSimpleExample()
+    {
+        $structure = array(
+            'templates' => array(
+                'sample_template.php' =>
+                    '<?php $config = array(\'module_name\' => \'{{module}}\', \'table_name\' => \'{{tableName}}\',)' .
+                        PHP_EOL,
+            ),
+        );
+
+        vfsStream::create($structure);
+
+        $loader =
+            new FilesystemLoader(vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'templates'));
+
+        $twig = new Environment($loader);
+
+        $mergedContents = $twig->render('sample_template.php', array('module' => 'Contacts',
+            'tableName' => 't_contacts' ));
+        $expectedContents =
+            '<?php $config = array(\'module_name\' => \'Contacts\', \'table_name\' => \'t_contacts\',)' . PHP_EOL;
+        $this->assertEquals($expectedContents, $mergedContents);
+
+    }
+
+    public function testGenerateTemplatedConfiguredFilesWhereTheBaseTemplatesDirIsNonExistent()
+    {
+        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
+        $pService = new PackagerService($readerWriter);
+
+        $config = new PackagerConfiguration('0.0.6', $this->softwareName, $this->softwareVersion,
+            $this->rootDir->url());
+
+        $templates['template1'] = array(
+            'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
+            'modules' => array(
+                'Contacts' => 'Contact',
+                'Accounts' => 'Account',
+                'Cases' => 'Case',
+                'Opportunities' => 'Opportunity',
+            )
+        );
+
+        $structure = array(
+            'src' => array(),
+            'configuration' => array(
+                'manifest.php' => '<?php echo "my manifest file";',
+                'templates.php' => '<?php PHP_EOL;',
+            ),
+        );
+
+        vfsStream::create($structure);
+
+        $messenger = new MockMessageOutputter();
+        $this->expectException(IllegalStateException::class);
+        $pService->generateTemplatedConfiguredFiles($templates, $messenger, $config);
+    }
+
+    /**
+     * test the case where "template1" directory does not exist under the "templates" directory
+     */
     public function testGenerateTemplatedConfiguredFilesWithNonExistentTemplatesSrcDirectory()
     {
         $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
@@ -304,14 +371,14 @@ class PackagerServiceTest extends TestCase
             $this->rootDir->url());
 
         $templates['template1'] = array(
-                'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
-                'modules' => array(
-                    'Contacts' => 'Contact',
-                    'Accounts' => 'Account',
-                    'Cases' => 'Case',
-                    'Opportunities' => 'Opportunity',
-                )
-            );
+            'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
+            'modules' => array(
+                'Contacts' => 'Contact',
+                'Accounts' => 'Account',
+                'Cases' => 'Case',
+                'Opportunities' => 'Opportunity',
+            )
+        );
 
         $structure = array(
             'src' => array(),
@@ -323,66 +390,59 @@ class PackagerServiceTest extends TestCase
         );
 
         vfsStream::create($structure);
+
         $messenger = new MockMessageOutputter();
+        $this->expectException(IllegalStateException::class);
         $pService->generateTemplatedConfiguredFiles($templates, $messenger, $config);
-        $this->assertFalse($this->rootDir->hasChild('src/custom/Extension'));
-        $this->assertEquals('The templates directory:  was not found.' . PHP_EOL, $messenger->getLastMessage());
-    }
-
-    /**
-     * a test for documentation purposes on how to use the Twig templating
-     * library in case there is a need to make changes to generateTemplatedConfiguredFiles
-     * on PackagerService
-     */
-    public function testTwigSimpleExample()
-    {
-        $structure = array(
-            'templates' => array(
-                'sample_template.php' => '<?php $dictionary $viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'] = array();' . PHP_EOL,
-            )
-        );
-
-        vfsStream::create($structure);
-
-        $loader =
-            new FilesystemLoader(vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'templates'));
-
-        $twig = new Environment($loader);
-
-        $mergedContents = $twig->render('sample_template.php', array('module' => 'Contacts'));
-        $expectedContents = '<?php $dictionary $viewdefs[\'Contacts\'][\'base\'][\'view\'][\'record\'] = array();' . PHP_EOL;
-        $this->assertEquals($expectedContents, $mergedContents);
-
+        //$this->assertFalse($this->rootDir->hasChild('src/custom/Extension'));
+        //$this->assertEquals('The templates directory:  was not found.' . PHP_EOL, $messenger->getLastMessage());
     }
 
     public function testGenerateTemplatedConfiguredFilesWithExistingTemplateSrcDirectory()
     {
         $config = new PackagerConfiguration('0.0.6', $this->softwareName, $this->softwareVersion,
             $this->rootDir->url());
-        echo 'In config the template dir name is: ' . $config->getTemplatesDirectoryName() . PHP_EOL;
-        echo 'In config the template dir path is: ' . $config->getPathToTemplatesDir() . PHP_EOL;
         $readerWriter = new FileReaderWriterImpl();
         $pService = new PackagerService($readerWriter);
 
         $templates['template1'] = array(
             'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
             'modules' => array(
-                'Contacts' => 'Contact',
-                'Accounts' => 'Account',
-                'Cases' => 'Case',
-                'Opportunities' => 'Opportunity',
-            )
+                'Contacts' => array(
+                    'singular' => 'Contact',
+                ),
+                'Accounts' => array(
+                  'singular' => 'Account',
+                ),
+                'Cases' => array(
+                    'singular' => 'Case',
+                    'tableName' => 't_cases',
+                ),
+                'Opportunities' => array(
+                   'singular' => 'Opportunity',
+                )
+            ),
         );
+
         $templates['template2'] = array(
             'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
             'modules' => array(
-                'Contacts' => 'Contact',
-                'Accounts' => 'Account',
-                'Cases' => 'Case',
-                'Opportunities' => 'Opportunity',
-            ),
-            'template_context' => array(
-
+                'Contacts' => array(
+                   'singular' => 'Contact',
+                    'tableName' => 't_contacts',
+                ),
+                'Accounts' => array(
+                    'singular' => 'Account',
+                    'tableName' => 't_accounts',
+                ),
+                'Cases' => array(
+                    'singular' => 'Case',
+                    'tableName' => 't_cases',
+                ),
+                'Opportunities' => array(
+                    'singular' => 'Opportunity',
+                    'tableName' => 't_opportunities'
+                ),
             ),
         );
 
@@ -399,21 +459,14 @@ class PackagerServiceTest extends TestCase
                         'base' => array(
                             'views' => array(
                                 'record' => array (
-                                    'remove_copy.php' => '<?php
+                                    'define_config_array.php' => '<?php
 
-$module = \'{MODULENAME}\';
-
-foreach($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key => $value) {
-    if($value[\'type\'] == \'actiondropdown\' && $value[\'name\'] == \'main_dropdown\') {
-        if(!empty($value[\'buttons\'])) {
-            foreach($value[\'buttons\'] as $button_key => $button) {
-                if(!empty($button[\'name\']) && $button[\'name\'] == \'duplicate_button\') {
-                    unset($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'][$key][\'buttons\'][$button_key]);
-                }
-            }
-        }
-    }
-}',
+$test_config_array_1 = array(
+    \'module\' => \'{{module}}\',
+    \'table\' => \'{{tableName}}\',
+    \'hostName\' => \'localhost\',
+);
+',
                                 ),
                             ),
                         ),
@@ -424,21 +477,13 @@ foreach($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'] a
                         'base' => array(
                             'views' => array(
                                 'record' => array (
-                                    'remove_copy_2.php' => '<?php
+                                    'logic_hook_def.php' => '<?php
 
-$module = \'{{module}}\';
-
-foreach($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key => $value) {
-    if($value[\'type\'] == \'actiondropdown\' && $value[\'name\'] == \'main_dropdown\') {
-        if(!empty($value[\'buttons\'])) {
-            foreach($value[\'buttons\'] as $button_key => $button) {
-                if(!empty($button[\'name\']) && $button[\'name\'] == \'duplicate_button\') {
-                    unset($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'][$key][\'buttons\'][$button_key]);
-                }
-            }
-        }
-    }
-}',
+$template_2_def = array(
+    \'module\' => \'{{module}}\',
+    \'table\' => \'{{tableName}}\',
+);
+',
                                 ),
                             ),
                         ),
@@ -453,20 +498,48 @@ foreach($viewdefs[\'{{module}}\'][\'base\'][\'view\'][\'record\'][\'buttons\'] a
         $messenger->toggleEnableEcho();
         //echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
         $pService->generateTemplatedConfiguredFiles($templates, $messenger, $config);
+
+        /*
+         * assert that the files were generated in the "pkg" directory
+         */
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Accounts'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Contacts'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Cases'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Opportunities'));
-        $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Accounts/Ext/clients/base/views/record'));
-        $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Contacts/Ext/clients/base/views/record'));
-        $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Cases/Ext/clients/base/views/record'));
-        $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Opportunities/Ext/clients/base/views/record'));
-        $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Accounts/Ext/clients/base/views/record/remove_copy.php'));
-        $this->assertTrue($this->rootDir->hasChild('pkg/custom/Extension/modules/Accounts/Ext/clients/base/views/record/remove_copy_2.php'));
-        $fileContents = $readerWriter->readFile($config->getPathToPkgDir() .
-            '/custom/Extension/modules/Cases/Ext/clients/base/views/record/remove_copy_2.php');
-        $this->assertGreaterThan(0, strpos($fileContents, '$module = \'Tasks\';'));
+
+        $this->assertTrue($this->rootDir->hasChild(
+            'pkg/custom/Extension/modules/Accounts/Ext/clients/base/views/record'));
+        $this->assertTrue($this->rootDir->hasChild(
+            'pkg/custom/Extension/modules/Contacts/Ext/clients/base/views/record'));
+        $this->assertTrue($this->rootDir->hasChild(
+            'pkg/custom/Extension/modules/Cases/Ext/clients/base/views/record'));
+        $this->assertTrue($this->rootDir->hasChild(
+            'pkg/custom/Extension/modules/Opportunities/Ext/clients/base/views/record'));
+        $this->assertTrue($this->rootDir->hasChild(
+            'pkg/custom/Extension/modules/Accounts/Ext/clients/base/views/record/define_config_array.php'));
+        $this->assertTrue($this->rootDir->hasChild(
+            'pkg/custom/Extension/modules/Cases/Ext/clients/base/views/record/define_config_array.php'));
+        $this->assertTrue($this->rootDir->hasChild(
+            'pkg/custom/Extension/modules/Accounts/Ext/clients/base/views/record/logic_hook_def.php'));
+
+        /*
+         * Load some of the generated files to see if the placeholders were correctly set
+         */
+        require($config->getPathToPkgDir() .
+            '/custom/Extension/modules/Cases/Ext/clients/base/views/record/define_config_array.php');
+        $this->assertTrue(isset($test_config_array_1));
+        $this->assertEquals('t_cases', $test_config_array_1['table']);
+
+        require($config->getPathToPkgDir() .
+            '/custom/Extension/modules/Accounts/Ext/clients/base/views/record/logic_hook_def.php');
+        $this->assertTrue(isset($template_2_def));
+        $this->assertEquals('t_accounts', $template_2_def['table']);
+
+        require($config->getPathToPkgDir() .
+            '/custom/Extension/modules/Opportunities/Ext/clients/base/views/record/logic_hook_def.php');
+        $this->assertTrue(isset($template_2_def));
+        $this->assertEquals('t_opportunities', $template_2_def['table']);
     }
 
     public function testBuildUpInstallDefsWithNoCustomInstallDefs()
