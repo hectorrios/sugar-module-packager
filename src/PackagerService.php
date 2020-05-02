@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
+use SugarModulePackager\Error\TemplateGenerationError;
 use Twig\Environment;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
@@ -160,16 +161,17 @@ class PackagerService
      * @param array $templatesConfig the contents of configurations/templates.php
      * @param MessageOutputter $messenger
      * @param PackagerConfiguration $config
+     * @throws TemplateGenerationError
+     * @throws IllegalStateException
      */
     public function generateTemplatedConfiguredFiles(array $templatesConfig, MessageOutputter $messenger,
                                                      PackagerConfiguration $config)
     {
         //Before starting as a precaution let's make sure that our standards templates directory is
-        //presents
+        //present
         if (!file_exists($config->getPathToTemplatesDir())) {
-            $messenger->message('the base templates dir: ' . $config->getTemplatesDirectoryName() .
-                ' does not exist.');
-            return;
+            throw new IllegalStateException('the base templates dir: ' . $config->getTemplatesDirectoryName() .
+                ' does not exist and is required');
         }
 
         foreach ($templatesConfig as $templateDir => $template_values) {
@@ -183,15 +185,19 @@ class PackagerService
                 $this->fileReaderWriterService->resolvePath($config->getPathToTemplatesDir() .
                     DIRECTORY_SEPARATOR . $templateDir);
             if (!$resolvedTemplateSrcDir) {
-                $messenger->message('The templates directory: ' . $resolvedTemplateSrcDir . ' was not found.');
-                return;
+                throw new IllegalStateException('The template directory: ' .
+                    $templateDir . ' was not found. It should be placed under the templates/ directory.' .
+                    ' If this template is not used then remove the ' . 'configuration for the template ' .
+                    'from configuration/templates.php');
             }
 
             // generate runtime files based on the templates
             $template_files_list =
                 $this->fileReaderWriterService->getFilesFromDirectory($resolvedTemplateSrcDir);
             if (empty($template_files_list)) {
-                return;
+                $messenger->message('****** there are no files present in template directory: ' .
+                    $resolvedTemplateSrcDir);
+                continue;
             }
 
             //for an OS that does not recognize "/" as a directory separator, e.g. Windows
@@ -206,17 +212,12 @@ class PackagerService
             $loader = new FilesystemLoader($templateDirectories, $config->getPathToTemplatesDir());
             $twig = new Environment($loader);
 
-            $templateContext = array();
-            if (array_key_exists('template_context', $template_values)) {
-                $templateData = $template_values['template_context'];
-            }
-
-            foreach ($modules as $module => $object) {
+            foreach ($modules as $module => $moduleContext) {
 
                 $messenger->message('* Generating template files for module: ' . $module);
 
                 //set the current module into the template context
-                $templateContext['module'] = $module;
+                $moduleContext['module'] = $module;
 
                 // replace "modulename" from path
                 $current_module_destination = str_replace('{MODULENAME}', $module, $template_dst_directory);
@@ -231,20 +232,18 @@ class PackagerService
 
                     $templateName = basename($file_relative);
                     try {
-                        $mergedContent = $twig->render($templateName, $templateContext);
+                        $mergedContent = $twig->render($templateName, $moduleContext);
                     } catch (LoaderError $e) {
                         //this should not be an issue since we've verified that the file already
                         //exists
-                        $messenger->message('Error: unable to load template: ' . $templateName . ' the error is: ' .
-                            $e->getMessage());
-                        return;
+                        throw new TemplateGenerationError('unable to load template: ' . $templateName,
+                            0, $e);
                     } catch (RuntimeError $e) {
-                        $messenger->message($e->getMessage());
-                        return;
+                        throw new TemplateGenerationError('a template rendering issue has occurred for ' .
+                        'template: ' . $templateName,0, $e);
                     } catch (SyntaxError $e) {
-                        $messenger->message('an error occurred merging the template context with template: ' .
-                            $templateName . ', error is: ' . $e->getMessage());
-                        return;
+                        throw new TemplateGenerationError('a template parsing error has occurred for ' .
+                            'template: ' . $templateName,0, $e);
                     }
 
                     //Was the file there? Let's make sure by checking that the file contents are not blank
