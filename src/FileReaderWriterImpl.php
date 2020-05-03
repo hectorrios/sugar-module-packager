@@ -116,7 +116,7 @@ class FileReaderWriterImpl implements ReaderWriter
 
     public function copyDirectory($srcDir, $destDir, ...$filesToExclude)
     {
-        $common_files_list = $this->getFilesFromDirectory($srcDir);
+        $common_files_list = $this->getFilesFromDirectory($srcDir, ...$filesToExclude);
         if (!empty($common_files_list)) {
             foreach ($common_files_list as $file_relative => $file_realpath) {
                 $destination_directory = $destDir . DIRECTORY_SEPARATOR .

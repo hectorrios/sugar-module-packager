@@ -198,8 +198,9 @@ class FileReaderWriterImplTest extends TestCase
         $srcDir = vfsStream::url('exampleDir/src');
         $readerWriter->addPathMapping($srcDir, $srcDir);
 
+        $filesToRemove = array('.gitkeep', 'file_to_ignore.txt',);
         $files = $readerWriter->getFilesFromDirectory($srcDir,
-            '.gitkeep', 'file_to_ignore.txt');
+            ...$filesToRemove);
         $this->assertCount(1, $files);
         $expectedFilePath = 'custom/clients/base/api/WOM2Api.php';
         $this->assertTrue(array_key_exists($expectedFilePath, $files));
@@ -237,4 +238,105 @@ class FileReaderWriterImplTest extends TestCase
         $this->assertCount(0, $files);
     }
 
+    public function testCopyDirectoryBasic()
+    {
+        //Create the src directory structure with just the custom folder
+        $structure = array(
+            'src' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                '.gitkeep' => 'this should be ignored',
+                                'file_to_ignore.txt' => 'this should also be ignored',
+                                'MyCustomApi.php' => 'my custom API class',
+                            ),
+                        ),
+                    ),
+                ),
+                '.gitkeep' => 'ignore my gitkeep file',
+            ),
+            'pkg' => array(),
+        );
+
+        vfsStream::create($structure);
+
+        $readerWriter = new FileReaderWriterImpl();
+        $readerWriter->copyDirectory($this->rootDir->url() . DIRECTORY_SEPARATOR . 'src',
+            $this->rootDir->url() . DIRECTORY_SEPARATOR . 'pkg');
+
+        $this->assertTrue($this->rootDir->hasChild('pkg/.gitkeep'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/.gitkeep'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/file_to_ignore.txt'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/MyCustomApi.php'));
+    }
+
+    public function testCopyDirectoryWhereDestDoesNotExist()
+    {
+        //Create the src directory structure with just the custom folder
+        $structure = array(
+            'src' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                '.gitkeep' => 'this should be ignored',
+                                'file_to_ignore.txt' => 'this should also be ignored',
+                                'MyCustomApi.php' => 'my custom API class',
+                            ),
+                        ),
+                    ),
+                ),
+                '.gitkeep' => 'ignore my gitkeep file',
+            ),
+        );
+
+        vfsStream::create($structure);
+
+        $readerWriter = new FileReaderWriterImpl();
+        $readerWriter->copyDirectory($this->rootDir->url() . DIRECTORY_SEPARATOR . 'src',
+            $this->rootDir->url() . DIRECTORY_SEPARATOR . 'pkg');
+
+        $this->assertTrue($this->rootDir->hasChild('pkg'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/.gitkeep'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/.gitkeep'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/file_to_ignore.txt'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/MyCustomApi.php'));
+    }
+
+    public function testCopyDirectoryAndExcludeSetOfFiles()
+    {
+        //Create the src directory structure with just the custom folder
+        $structure = array(
+            'src' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                '.gitkeep' => 'this should be ignored',
+                                'file_to_ignore.txt' => 'this should also be ignored',
+                                'MyCustomApi.php' => 'my custom API class',
+                            ),
+                        ),
+                    ),
+                ),
+                '.gitkeep' => 'ignore my gitkeep file',
+            ),
+        );
+
+        vfsStream::create($structure);
+
+        $readerWriter = new FileReaderWriterImpl();
+        $readerWriter->copyDirectory($this->rootDir->url() . DIRECTORY_SEPARATOR . 'src',
+            $this->rootDir->url() . DIRECTORY_SEPARATOR . 'pkg', ...array('.gitkeep', 'file_to_ignore.txt'));
+
+        $this->assertTrue($this->rootDir->hasChild('pkg'));
+        $this->assertFalse($this->rootDir->hasChild('pkg/.gitkeep'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api'));
+        $this->assertFalse($this->rootDir->hasChild('pkg/custom/clients/base/api/.gitkeep'));
+        $this->assertFalse($this->rootDir->hasChild('pkg/custom/clients/base/api/file_to_ignore.txt'));
+        $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/MyCustomApi.php'));
+    }
 }
