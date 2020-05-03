@@ -3,10 +3,7 @@
 
 namespace SugarModulePackager;
 
-
 use InvalidArgumentException;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use SplFileInfo;
 
 class FileReaderWriterImpl implements ReaderWriter

@@ -3,11 +3,6 @@
 
 namespace SugarModulePackager;
 
-
-use InvalidArgumentException;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use SplFileInfo;
 use SugarModulePackager\Error\TemplateGenerationError;
 use Twig\Environment;
 use Twig\Error\LoaderError;

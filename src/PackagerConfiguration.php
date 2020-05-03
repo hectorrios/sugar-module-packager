@@ -3,8 +3,6 @@
 
 namespace SugarModulePackager;
 
-use InvalidArgumentException;
-
 class PackagerConfiguration
 {
     /* @var string $packageRootDir */

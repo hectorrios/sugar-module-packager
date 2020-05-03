@@ -29,7 +29,6 @@ class FileReaderWriterImplTest extends TestCase
         $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
         $dir = 'releases';
         $this->assertFalse($this->rootDir->hasChild($dir));
-        //$readerWriter->createDirectory($dir);
         $readerWriter->createDirectory($dir);
         $this->assertTrue($this->rootDir->hasChild($dir));
     }
@@ -100,13 +99,7 @@ class FileReaderWriterImplTest extends TestCase
 
         $this->assertDirectoryNotExists($dirPart);
 
-        //create it
-        //$readerWriter->createDirectory($dirPart);
-
-        //$this->assertDirectoryExists($dirPart);
-
         $this->expectException(InvalidArgumentException::class);
-        //$readerWriter->createDirectory($config->getConfigDirectory());
         $readerWriter->writeFile( $filePath, $manifestContent);
 
         $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));

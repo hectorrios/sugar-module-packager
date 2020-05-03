@@ -1,11 +1,10 @@
 <?php
 
-
 namespace SugarModulePackager;
-
 
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use SugarModulePackager\Error\TemplateGenerationError;
 use ZipArchive;
 
 class Packager
@@ -58,14 +57,6 @@ class Packager
             $this->config->getPrefixReleasePackage() . $package_name . '.zip';
     }
 
-    protected function getDirectoryContentIterator($path)
-    {
-        return new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator(realpath($path), RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::LEAVES_ONLY
-        );
-    }
-
     /**
      * @param $file_relative
      * @param array $installdefs
@@ -94,6 +85,7 @@ class Packager
      * @param string $version
      * @throws ManifestIncompleteException
      * @throws IllegalStateException
+     * @throws TemplateGenerationError
      */
     public function build($version)
     {

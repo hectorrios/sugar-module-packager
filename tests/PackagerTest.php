@@ -39,7 +39,6 @@ class PackagerTest extends TestCase
 
     public function testBuildThrowsManifestIncompleteExceptionWhenNoManifestExists()
     {
-
         $messageOutputter = new MockMessageOutputter();
         $pConfig = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
             Packager::SW_VERSION, vfsStream::url($this->rootDirName));
@@ -60,8 +59,8 @@ class PackagerTest extends TestCase
         $config = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
             Packager::SW_VERSION, vfsStream::url($this->rootDirName));
 
-        $structure = [
-            "configuration" => [
+        $structure =array(
+            "configuration" => array(
                 'manifest.php' => "<?php".PHP_EOL."\$manifest['id'] = 'id_001';".PHP_EOL.
                     "\$manifest['built_in_version'] = '9.3';".PHP_EOL.
                     "\$manifest['version'] = '0.0.1';".PHP_EOL.
@@ -69,8 +68,8 @@ class PackagerTest extends TestCase
                     "\$manifest['author'] = '';" . PHP_EOL .
                     "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
                     $config->getManifestDefaultInstallVersionString() .";",
-            ],
-        ];
+            ),
+        );
 
         vfsStream::create($structure);
         $pService = new PackagerService(new FileReaderWriterImpl());
@@ -87,8 +86,8 @@ class PackagerTest extends TestCase
         $config = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
             Packager::SW_VERSION, vfsStream::url($this->rootDirName));
 
-        $structure = [
-            "configuration" => [
+        $structure = array(
+            "configuration" => array(
                 'manifest.php' => "<?php".PHP_EOL."\$manifest['id'] = 'id_001';".PHP_EOL.
                     "\$manifest['built_in_version'] = '9.3';".PHP_EOL.
                     "\$manifest['version'] = '0.0.1';".PHP_EOL.
@@ -96,17 +95,16 @@ class PackagerTest extends TestCase
                     "\$manifest['author'] = 'Sugar Testing GmbH';" . PHP_EOL .
                     "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
                     $config->getManifestDefaultInstallVersionString() .";",
-            ],
-            "releases" => [
+            ),
+            "releases" => array(
                 'module_id_001_0.0.2.zip' => 'my zip file',
-            ],
-        ];
+            ),
+        );
 
         vfsStream::create($structure);
         $pService = new PackagerService(new FileReaderWriterImpl());
         $messenger = new MockMessageOutputter();
 //        $messenger->toggleEnableEcho();
-        //$this->expectException(ManifestIncompleteException::class);
         $packager = new Packager($pService, $messenger, $config);
 
         $packager->build('0.0.2');
@@ -119,17 +117,17 @@ class PackagerTest extends TestCase
         $config = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
             Packager::SW_VERSION, vfsStream::url($this->rootDirName));
 
-        $structure = [
-            'pkg' => [
+        $structure = array(
+            'pkg' => array(
                 'one.txt' => 'first file',
                 'two.txt' => 'second file',
-                'nested_dir' => [
+                'nested_dir' => array(
                     'nested_one.txt' => 'nested one, first file',
                     'nested_two.txt' => 'nested one, second file',
                     'nested_three.txt' => 'nested one, third file',
-                ],
-            ]
-        ];
+                ),
+            ),
+        );
 
         vfsStream::create($structure);
 
@@ -171,19 +169,18 @@ class PackagerTest extends TestCase
         $config = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
             Packager::SW_VERSION, vfsStream::url($this->rootDirName));
 
-        $structure = [
-            'src' => [
+        $structure = array(
+            'src' => array(
                 'one.txt' => 'first file',
                 'two.txt' => 'second file',
-                'nested_dir' => [
+                'nested_dir' => array(
                     'nested_one.txt' => 'nested one, first file',
                     'nested_two.txt' => 'nested one, second file',
                     'nested_three.txt' => 'nested one, third file',
-                ],
-            ],
-            'pkg' => [
-            ]
-        ];
+                ),
+            ),
+            'pkg' => array(),
+        );
 
         vfsStream::create($structure);
 
@@ -261,17 +258,17 @@ class PackagerTest extends TestCase
         $mockPService->method('buildUpInstallDefs')
             ->will($this->returnValue([]));
 
-        $expectedTemplate = [
-            'template1' => [
+        $expectedTemplate =array(
+            'template1' => array(
                 'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
-                'modules' => [
+                'modules' => array(
                     'Contacts' => 'Contact',
                     'Accounts' => 'Account',
                     'Cases' => 'Case',
                     'Opportunities' => 'Opportunity',
-                ],
-            ],
-        ];
+                ),
+            ),
+        );
 
         $mockPService->method('loadTemplateConfiguration')
             ->will($this->returnValue($expectedTemplate));
@@ -295,9 +292,7 @@ class PackagerTest extends TestCase
         $messenger = new MockMessageOutputter();
 
         $structure = array(
-            'src' => array(
-
-            ),
+            'src' => array(),
             'configuration' => array(
                 'manifest.php' => '<?php echo "my manifest file";',
                 'templates.php' => '<?php PHP_EOL; ',
@@ -307,17 +302,17 @@ class PackagerTest extends TestCase
 
         vfsStream::create($structure);
 
-        $expectedTemplate = [
-            'template1' => [
+        $expectedTemplate = array(
+            'template1' => array(
                 'directory_pattern' => 'custom/Extension/modules/{MODULENAME}/Ext',
-                'modules' => [
+                'modules' => array(
                     'Contacts' => 'Contact',
                     'Accounts' => 'Account',
                     'Cases' => 'Case',
                     'Opportunities' => 'Opportunity',
-                ],
-            ],
-        ];
+                ),
+            ),
+        );
 
         $mockService = $this->createMock(PackagerService::class);
 

@@ -110,13 +110,13 @@ class PackagerServiceTest extends TestCase
         $readerWriter = new FileReaderWriterImpl();
         $pService = new PackagerService($readerWriter);
 
-        $directories = [
+        $directories = array(
             vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'config'),
             vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'releases' ),
             vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'src' ),
             vfsStream::url($this->rootDirName . DIRECTORY_SEPARATOR . 'pkg' ),
 
-        ];
+        );
 
         $pService->createPackagerDirectories(...$directories);
         $this->assertTrue($this->rootDir->hasChildren());
@@ -829,7 +829,7 @@ $installdefs[\'beans\'] = array (
     public function testCreateSkeletonManifestFile()
     {
         $structure = [
-           'configuration' => [],
+           'configuration' => array(),
         ] ;
         vfsStream::create($structure);
 
@@ -839,7 +839,7 @@ $installdefs[\'beans\'] = array (
         $this->assertFalse($this->rootDir->hasChild('configuration/manifest.php'));
         $pService = new PackagerService(new ReaderWriterTestDecorator(new FileReaderWriterImpl()));
         $this->expectException(ManifestIncompleteException::class);
-        $newManifestContents = $pService->createSkeletonManifestFile($config);
+        $pService->createSkeletonManifestFile($config);
         $this->assertTrue($this->rootDir->hasChild('configuration/manifest.php'));
 
     }
@@ -875,7 +875,7 @@ $installdefs[\'beans\'] = array (
                     ),
                 ),
             ),
-            'pkg' => [],
+            'pkg' => array(),
         );
 
         vfsStream::create($structure);
@@ -895,20 +895,19 @@ $installdefs[\'beans\'] = array (
         $config = new PackagerConfiguration('0.0.1', Packager::SW_NAME,
             Packager::SW_VERSION, vfsStream::url($this->rootDirName));
 
-        $structure = [
-            'src' => [
+        $structure = array(
+            'src' => array(
                 'one.txt' => 'first file',
                 'two.txt' => 'second file',
-                'nested_dir' => [
+                'nested_dir' => array(
                     'nested_one.txt' => 'nested one, first file',
                     'nested_two.txt' => 'nested one, second file',
                     'nested_three.txt' => 'nested one, third file',
                     '.gitignore' => '.idea/' . PHP_EOL . '.git' . PHP_EOL,
-                ],
-            ],
-            'pkg' => [
-            ]
-        ];
+                ),
+            ),
+            'pkg' =>array(),
+        );
 
         vfsStream::create($structure);
 
