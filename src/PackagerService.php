@@ -370,7 +370,7 @@ class PackagerService
     public function copySrcIntoPkg(PackagerConfiguration $config)
     {
         $this->getFileReaderWriterService()->copyDirectory($config->getPathToSrcDir(),
-            $config->getPathToPkgDir());
+            $config->getPathToPkgDir(), ...$config->getFilesToRemoveFromZip());
     }
 
     /**

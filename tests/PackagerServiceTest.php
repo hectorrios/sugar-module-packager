@@ -493,7 +493,6 @@ $template_2_def = array(
         vfsStream::create($structure);
 
         $messenger = new MockMessageOutputter();
-        $messenger->toggleEnableEcho();
         //echo print_r(vfsStream::inspect(new vfsStreamStructureVisitor())->getStructure(), true);
         $pService->generateTemplatedConfiguredFiles($templates, $messenger, $config);
 
@@ -868,7 +867,7 @@ $installdefs[\'beans\'] = array (
                             'api' => array(
                                 'WOM2Api.php' => '<?php echo "Hello";',
                                 '.gitkeep' => 'this should be ignored',
-                                'file_to_ignore.txt' => 'this should also be ignored',
+                                '.DS_Store' => 'this should also be ignored',
                             ),
                         ),
                     ),
@@ -886,6 +885,8 @@ $installdefs[\'beans\'] = array (
         $pService->copySrcIntoPkg($config);
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api'));
         $this->assertTrue($this->rootDir->hasChild('pkg/custom/clients/base/api/WOM2Api.php'));
+        $this->assertFalse($this->rootDir->hasChild('pkg/custom/clients/base/api/.gitkeep'));
+        $this->assertFalse($this->rootDir->hasChild('pkg/custom/clients/base/api/.DS_Store'));
 
     }
 
