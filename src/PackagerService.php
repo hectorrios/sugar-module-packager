@@ -85,12 +85,13 @@ class PackagerService
     public function createSkeletonManifestFile(PackagerConfiguration $configuration)
     {
         // create sample empty manifest file
-        $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
-            "\$manifest['built_in_version'] = '';".PHP_EOL.
-            "\$manifest['name'] = '';".PHP_EOL.
-            "\$manifest['description'] = '';".PHP_EOL.
-            "\$manifest['author'] = '". $configuration->getManifestDefaultAuthor() . "';".PHP_EOL.
-            "\$manifest['acceptable_sugar_versions']['regex_matches'] = ". $configuration->getManifestDefaultInstallVersionString() .";";
+        $manifestContent = "<?php" . PHP_EOL . "\$manifest['id'] = '';" . PHP_EOL .
+            "\$manifest['built_in_version'] = '';" . PHP_EOL .
+            "\$manifest['name'] = '';" . PHP_EOL .
+            "\$manifest['description'] = '';" . PHP_EOL .
+            "\$manifest['author'] = '" . $configuration->getManifestDefaultAuthor() . "';" . PHP_EOL .
+            "\$manifest['acceptable_sugar_versions']['regex_matches'] = " .
+            $configuration->getManifestDefaultInstallVersionString() . ";";
 
         $this->fileReaderWriterService->writeFile($configuration->getPathToManifestFile(),
                 $manifestContent);
@@ -223,7 +224,7 @@ class PackagerService
                         $current_module_destination . DIRECTORY_SEPARATOR . dirname($file_relative) .
                         DIRECTORY_SEPARATOR;
 
-                    $messenger->message('* Generating '.$destination_directory . basename($file_relative));
+                    $messenger->message('* Generating '. $destination_directory . basename($file_relative));
 
                     $templateName = basename($file_relative);
                     try {
@@ -277,7 +278,7 @@ class PackagerService
         }
 
         // adding the file as well, for reference purpose only
-        $pkgDirPath = $this->fileReaderWriterService->resolvePath($config->getPkgDirectoryName());
+        $pkgDirPath = $config->getPathToPkgDir();
         $this->fileReaderWriterService->writeFile($pkgDirPath .
             DIRECTORY_SEPARATOR . $config->getManifestFile(), $manifestContent);
         $archiver->addFromString($config->getManifestFile(), $manifestContent);

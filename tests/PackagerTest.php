@@ -61,13 +61,13 @@ class PackagerTest extends TestCase
 
         $structure =array(
             "configuration" => array(
-                'manifest.php' => "<?php".PHP_EOL."\$manifest['id'] = 'id_001';".PHP_EOL.
-                    "\$manifest['built_in_version'] = '9.3';".PHP_EOL.
-                    "\$manifest['version'] = '0.0.1';".PHP_EOL.
-                    "\$manifest['name'] = 'test case';".PHP_EOL.
+                'manifest.php' => "<?php" . PHP_EOL . "\$manifest['id'] = 'id_001';" . PHP_EOL .
+                    "\$manifest['built_in_version'] = '9.3';" . PHP_EOL .
+                    "\$manifest['version'] = '0.0.1';" . PHP_EOL .
+                    "\$manifest['name'] = 'test case';" . PHP_EOL .
                     "\$manifest['author'] = '';" . PHP_EOL .
-                    "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
-                    $config->getManifestDefaultInstallVersionString() .";",
+                    "\$manifest['acceptable_sugar_versions']['regex_matches'] = " .
+                    $config->getManifestDefaultInstallVersionString() . ";",
             ),
         );
 
@@ -88,13 +88,13 @@ class PackagerTest extends TestCase
 
         $structure = array(
             "configuration" => array(
-                'manifest.php' => "<?php".PHP_EOL."\$manifest['id'] = 'id_001';".PHP_EOL.
-                    "\$manifest['built_in_version'] = '9.3';".PHP_EOL.
-                    "\$manifest['version'] = '0.0.1';".PHP_EOL.
-                    "\$manifest['name'] = 'test case';".PHP_EOL.
+                'manifest.php' => "<?php" . PHP_EOL . "\$manifest['id'] = 'id_001';" . PHP_EOL .
+                    "\$manifest['built_in_version'] = '9.3';" . PHP_EOL .
+                    "\$manifest['version'] = '0.0.1';" . PHP_EOL .
+                    "\$manifest['name'] = 'test case';" . PHP_EOL .
                     "\$manifest['author'] = 'Sugar Testing GmbH';" . PHP_EOL .
-                    "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
-                    $config->getManifestDefaultInstallVersionString() .";",
+                    "\$manifest['acceptable_sugar_versions']['regex_matches'] = " .
+                    $config->getManifestDefaultInstallVersionString() . ";",
             ),
             "releases" => array(
                 'module_id_001_0.0.2.zip' => 'my zip file',
@@ -104,7 +104,7 @@ class PackagerTest extends TestCase
         vfsStream::create($structure);
         $pService = new PackagerService(new FileReaderWriterImpl());
         $messenger = new MockMessageOutputter();
-//        $messenger->toggleEnableEcho();
+
         $packager = new Packager($pService, $messenger, $config);
 
         $packager->build('0.0.2');
@@ -186,7 +186,6 @@ class PackagerTest extends TestCase
 
         $mockPService = $this->getMockBuilder(PackagerService::class)
             ->disableOriginalConstructor()
-//            ->setConstructorArgs([new FileReaderWriterImpl()])
             ->getMock();
 
         $mockPService->expects($this->once())

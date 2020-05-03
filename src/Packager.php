@@ -115,7 +115,7 @@ class Packager
         $zip = $this->getZipName($manifest['id'] . '_' . $version);
 
         if (file_exists($zip)) {
-            $this->messageOutputter->message('Release '.$zip.' already exists!');
+            $this->messageOutputter->message('Release ' . $zip . ' already exists!');
             return;
         }
 

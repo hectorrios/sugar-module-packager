@@ -57,13 +57,13 @@ class FileReaderWriterImplTest extends TestCase
 
         $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
 
-        $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
-            "\$manifest['built_in_version'] = '';".PHP_EOL.
-            "\$manifest['name'] = '';".PHP_EOL.
-            "\$manifest['description'] = '';".PHP_EOL.
+        $manifestContent = "<?php" . PHP_EOL . "\$manifest['id'] = '';" . PHP_EOL .
+            "\$manifest['built_in_version'] = '';" . PHP_EOL .
+            "\$manifest['name'] = '';" . PHP_EOL .
+            "\$manifest['description'] = '';" . PHP_EOL .
             "\$manifest['author'] = 'Sugar Partner';" . PHP_EOL .
-            "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
-            $config->getManifestDefaultInstallVersionString() .";";
+            "\$manifest['acceptable_sugar_versions']['regex_matches'] = " .
+            $config->getManifestDefaultInstallVersionString() . ";";
 
         $readerWriter = new FileReaderWriterImpl(vfsStream::url('exampleDir'));
         $readerWriter->createDirectory($config->getConfigDirectoryName());
@@ -81,13 +81,13 @@ class FileReaderWriterImplTest extends TestCase
 
         $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
 
-        $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = '';".PHP_EOL.
-            "\$manifest['built_in_version'] = '';".PHP_EOL.
-            "\$manifest['name'] = '';".PHP_EOL.
-            "\$manifest['description'] = '';".PHP_EOL.
+        $manifestContent = "<?php" . PHP_EOL . "\$manifest['id'] = '';" . PHP_EOL .
+            "\$manifest['built_in_version'] = '';" . PHP_EOL .
+            "\$manifest['name'] = '';" . PHP_EOL .
+            "\$manifest['description'] = '';" . PHP_EOL .
             "\$manifest['author'] = 'Sugar Partner';" . PHP_EOL .
-            "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
-            $config->getManifestDefaultInstallVersionString() .";";
+            "\$manifest['acceptable_sugar_versions']['regex_matches'] = " .
+            $config->getManifestDefaultInstallVersionString() . ";";
 
         $readerWriter = new FileReaderWriterImpl();
 

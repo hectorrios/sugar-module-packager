@@ -51,14 +51,14 @@ class PackagerServiceTest extends TestCase
 
         $this->assertFalse($this->rootDir->hasChild($config->getManifestFile()));
         //Create a base template lacking all of the main thing
-        $manifestContent = "<?php".PHP_EOL."\$manifest['id'] = 'id_001';".PHP_EOL.
-            "\$manifest['built_in_version'] = '9.3';".PHP_EOL.
-            //"\$manifest['version'] = '0.0.1';".PHP_EOL.
-            "\$manifest['name'] = 'test case';".PHP_EOL.
-            "\$manifest['description'] = '';".PHP_EOL.
+        $manifestContent = "<?php" . PHP_EOL . "\$manifest['id'] = 'id_001';" . PHP_EOL .
+            "\$manifest['built_in_version'] = '9.3';" . PHP_EOL .
+            "\$manifest['version'] = '0.0.1';" . PHP_EOL .
+            "\$manifest['name'] = 'test case';" . PHP_EOL .
+            "\$manifest['description'] = '';" . PHP_EOL .
             "\$manifest['author'] = 'Sugar Partner';" . PHP_EOL .
-            "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
-                $config->getManifestDefaultInstallVersionString() .";";
+            "\$manifest['acceptable_sugar_versions']['regex_matches'] = " .
+                $config->getManifestDefaultInstallVersionString() . ";";
 
         $readerWriter = new FileReaderWriterImpl(vfsStream::url($this->rootDirName));
 
@@ -86,13 +86,13 @@ class PackagerServiceTest extends TestCase
         // author field for example cannot be empty
         $structure = [
           "configuration" => [
-              'manifest.php' => "<?php".PHP_EOL."\$manifest['id'] = 'id_001';".PHP_EOL.
-                  "\$manifest['built_in_version'] = '9.3';".PHP_EOL.
-                  "\$manifest['version'] = '0.0.1';".PHP_EOL.
-                  "\$manifest['name'] = 'test case';".PHP_EOL.
+              'manifest.php' => "<?php" . PHP_EOL . "\$manifest['id'] = 'id_001';" . PHP_EOL .
+                  "\$manifest['built_in_version'] = '9.3';" . PHP_EOL .
+                  "\$manifest['version'] = '0.0.1';" . PHP_EOL .
+                  "\$manifest['name'] = 'test case';" . PHP_EOL .
                   "\$manifest['author'] = '';" . PHP_EOL .
-                  "\$manifest['acceptable_sugar_versions']['regex_matches'] = ".
-                  $config->getManifestDefaultInstallVersionString() .";",
+                  "\$manifest['acceptable_sugar_versions']['regex_matches'] = " .
+                  $config->getManifestDefaultInstallVersionString() . ";",
           ],
         ];
 
@@ -394,8 +394,6 @@ class PackagerServiceTest extends TestCase
         $messenger = new MockMessageOutputter();
         $this->expectException(IllegalStateException::class);
         $pService->generateTemplatedConfiguredFiles($templates, $messenger, $config);
-        //$this->assertFalse($this->rootDir->hasChild('src/custom/Extension'));
-        //$this->assertEquals('The templates directory:  was not found.' . PHP_EOL, $messenger->getLastMessage());
     }
 
     public function testGenerateTemplatedConfiguredFilesWithExistingTemplateSrcDirectory()
@@ -804,7 +802,8 @@ $installdefs[\'beans\'] = array (
 
         $manifestContent = $this->constructSampleFinalManifest($installdefsLocal, $manifestLocal);
 
-        $config = new PackagerConfiguration('v0.0.1', $this->softwareName, $this->softwareVersion);
+        $config = new PackagerConfiguration('v0.0.1', $this->softwareName, $this->softwareVersion,
+            $this->rootDir->url());
         $pService = new PackagerService($readerWriter);
         $messenger = new MockMessageOutputter();
 //        $messenger->toggleEnableEcho();
