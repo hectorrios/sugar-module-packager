@@ -1,7 +1,7 @@
 <?php
 
 
-namespace SugarModulePackager;
+namespace SugarModulePackager\Error;
 
 
 use Exception;

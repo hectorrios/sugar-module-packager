@@ -6,7 +6,7 @@ use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use PHPUnit\Framework\TestCase;
 use SugarModulePackager\FileReaderWriterImpl;
-use SugarModulePackager\ManifestIncompleteException;
+use SugarModulePackager\Error\ManifestIncompleteException;
 use SugarModulePackager\Packager;
 use SugarModulePackager\PackagerConfiguration;
 use SugarModulePackager\PackagerService;

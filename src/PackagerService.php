@@ -3,6 +3,8 @@
 
 namespace SugarModulePackager;
 
+use SugarModulePackager\Error\IllegalStateException;
+use SugarModulePackager\Error\ManifestIncompleteException;
 use SugarModulePackager\Error\TemplateGenerationError;
 use Twig\Environment;
 use Twig\Error\LoaderError;
