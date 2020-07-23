@@ -68,16 +68,16 @@ class Packager
 
     /**
      * @param $file_relative
-     * @param array $installdefs
+     * @param array $customInstalldefs
      * @return bool
      */
-    protected function shouldAddToManifestCopy($file_relative, $installdefs)
+    protected function shouldAddToManifestCopy($file_relative, $customInstalldefs)
     {
         if (!in_array(basename($file_relative), $this->config->getFilesToRemoveFromManifestCopy())) {
             // check and dont copy all *_execute and *_uninstall installdefs keyword files
             foreach ($this->config->getInstalldefsKeysToRemoveFromManifestCopy() as $to_remove) {
-                if (!empty($custom_installdefs[$to_remove])) {
-                    foreach ($custom_installdefs[$to_remove] as $manifest_file_copy) {
+                if (!empty($customInstalldefs[$to_remove])) {
+                    foreach ($customInstalldefs[$to_remove] as $manifest_file_copy) {
                         // found matching relative file as one of the *_execute or *_uninstall scripts
                         if (strcmp(str_replace('<basepath>/', '', $manifest_file_copy), $file_relative) == 0) {
                             return false;
