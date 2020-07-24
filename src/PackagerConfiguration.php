@@ -38,6 +38,7 @@ class PackagerConfiguration
         'language',
         'image_dir',
         'jsgroups',
+        'hookdefs',
     );
 
 
