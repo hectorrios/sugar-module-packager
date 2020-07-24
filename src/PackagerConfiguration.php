@@ -34,7 +34,10 @@ class PackagerConfiguration
         'pre_execute',
         'post_execute',
         'pre_uninstall',
-        'post_uninstall'
+        'post_uninstall',
+        'language',
+        'image_dir',
+        'jsgroups',
     );
 
 

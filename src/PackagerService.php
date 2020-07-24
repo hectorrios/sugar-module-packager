@@ -243,7 +243,7 @@ class PackagerService
      * @inheritDoc
      */
     public function buildUpInstallDefs($fileList, $id, MessageOutputter $messenger,
-                                       Callable $shouldAddToManifestCopy, $customInstalldefFilePath = '')
+                                       Callable $shouldAddToManifestCopy, PackagerConfiguration $config)
     {
         $installdefs = array();
         $installdefs_original = array();
@@ -251,14 +251,18 @@ class PackagerService
 
         $installdefs_original['id'] = $id;
 
-        if (!empty($customInstalldefFilePath) && file_exists($customInstalldefFilePath)) {
-            require($customInstalldefFilePath);
-        }
-
         if (!empty($fileList)) {
-            foreach ($fileList as $file_relative => $file_realpath) {
 
-                if ($shouldAddToManifestCopy($file_relative, $installdefs)) {
+            //Look up a custom installdefs.php file if one exists in the config directory
+            if (!empty($config->getPathToConfigInstalldefsFile()) &&
+                file_exists($config->getPathToConfigInstalldefsFile())) {
+                require($config->getPathToConfigInstalldefsFile());
+            }
+
+            $ignoreMap = $this->makeIgnoreInstallDefFileMap($installdefs, $config);
+
+            foreach ($fileList as $file_relative => $file_realpath) {
+                if ($shouldAddToManifestCopy($file_relative, $ignoreMap)) {
                     $installdefs_generated['copy'][] = array(
                         'from' => '<basepath>/' . $file_relative,
                         'to' => $file_relative,
@@ -346,5 +350,78 @@ class PackagerService
 
             throw new ManifestIncompleteException('manifest file array failed validation');
         }
+    }
+
+    /**
+     * makeIgnoreInstallDefFileMap parses the provided installdefs array
+     * (installdefs.php file from configuration directory to build an array of files
+     * and directories that are attached to any of "ignore" installdef keys
+     * @param array $customInstallDef contents of a custom installdefs
+     * @param PackagerConfiguration $theConfig
+     * @return array list of files that should be ignored/skipped when generating installdef
+     * "copy" entries
+     */
+    private function makeIgnoreInstallDefFileMap(array $customInstallDef, PackagerConfiguration $theConfig)
+    {
+        $fileMap = array();
+
+        foreach ($theConfig->getInstalldefsKeysToRemoveFromManifestCopy() as $to_remove) {
+            //do we have the key in the provided $customInstallDef?
+            if (array_key_exists($to_remove, $customInstallDef)) {
+
+                if (is_array($customInstallDef[$to_remove])) {
+                    foreach ($customInstallDef[$to_remove] as $manifest_file_copy) {
+                        /*
+                         * $manifest_file_copy can be possibly one of 2 value types:
+                         *  - string
+                         *  - array
+                         *
+                         *  If we have an array we'll check for "from" key.
+                         *
+                         *  If we have a string then it's either a file or a directory
+                         */
+                        if (is_array($manifest_file_copy)) {
+                            //does it have a from key?
+                            if (array_key_exists('from', $manifest_file_copy)) {
+                                $fileMap[] =
+                                    str_replace('<basepath>/', '', $manifest_file_copy['from']);
+                            }
+                        } else { //not an array
+                            // found matching relative file as one of the *_execute or *_uninstall scripts
+                            $fileMap[] = str_replace('<basepath>/', '', $manifest_file_copy);
+                        }
+                    }
+                } else if (self::looksLikeAFilePathString($customInstallDef[$to_remove])) { //assume it's a string
+                    $relativeFile = str_replace('<basepath>/', '', $customInstallDef[$to_remove]);
+
+                    if (is_dir(realpath($theConfig->getPathToPkgDir() . DIRECTORY_SEPARATOR . $relativeFile))) {
+                        $dirFiles = $this->getFilesFromDirectory($theConfig->getPathToPkgDir() .
+                            DIRECTORY_SEPARATOR .  $relativeFile);
+                        //$dirFiles = self::getModuleFiles(self::$pkg_directory . DIRECTORY_SEPARATOR . $relativeFile);
+                        foreach ($dirFiles as $key => $fullPath) {
+                            $fileMap[] = $relativeFile . DIRECTORY_SEPARATOR . $key;
+                        }
+                    } else {
+                        $fileMap[] = $relativeFile;
+                    }
+                }
+            }
+        }
+
+        return $fileMap;
+    }
+
+    /**
+     * looksLikeAFilePathString simply assumes that if the string begins with
+     * the string <basepath>, then the passed in filePath string, for our purposes,
+     * refers to a file or directory
+     * @param string $filePath will be checked to see if it is a possible
+     * file or directory path.
+     * @return bool
+     */
+    private function looksLikeAFilePathString($filePath)
+    {
+        $needle = '<basepath>';
+        return substr_compare($filePath, $needle, 0, strlen($needle)) === 0;
     }
 }

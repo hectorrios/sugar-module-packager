@@ -430,12 +430,14 @@ foreach($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key 
 
         vfsStream::create($structure);
 
+        $pConfig = new PackagerConfiguration('0.0.2', $this->softwareName, $this->softwareVersion);
+
         $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url($this->rootDirName . '/pkg'));
 
         $finalInstallDefs = $pService->buildUpInstallDefs($fileList, 'my_id_001', new MockMessageOutputter(),
             function($file_relative, $installDefs) {
                 return true;
-            }
+            }, $pConfig
         );
 
         $this->assertIsArray($finalInstallDefs);
@@ -443,12 +445,15 @@ foreach($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key 
         $this->assertCount(2, $finalInstallDefs);
         $this->assertCount(1, $finalInstallDefs['copy']);
     }
-
-    public function testBuildUpInstallDefsWithCustomInstallDefs()
+    public function testBuildUpInstallDefsWithCustomInstallDefsAndDummyAllowAllCallback()
     {
         $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
         $pService = new PackagerService($readerWriter);
 
+        $pConfig = new PackagerConfiguration('0.0.2', $this->softwareName, $this->softwareVersion,
+            vfsStream::url($this->rootDirName));
+
+        //
         $structure = array(
             'src' => array(
             ),
@@ -460,6 +465,97 @@ foreach($viewdefs[$module][\'base\'][\'view\'][\'record\'][\'buttons\'] as $key 
                                 'WOM2Api.php' => '<?php echo "Hello";',
                             ),
                         ),
+                    ),
+                    'Extension' => array(
+                        "application" => array(
+                            "Ext" => array(
+                                "Language" => array(
+                                    "en_us.custom_language_file.php" => '<?php echo "Language File";',
+                                )
+                            )
+                        )
+                    ),
+                ),
+                'modules' => array(
+                    'Packages' => array(
+                        'Packages.php' => '<?php echo \'Hello\'',
+                    ),
+                ),
+            ),
+            'configuration' => array(
+                'manifest.php' => '<?php echo "my manifest file";',
+                'installdefs.php' => '<?php
+
+$installdefs[\'beans\'] = array (
+    0 =>
+        array (
+            \'module\' => \'Packages\',
+            \'class\' => \'Packages\',
+            \'path\' => \'modules/Packages/Packages.php\',
+            \'tab\' => false,
+        ),
+);
+
+$installdefs[\'language\'] = array (
+    0 =>
+        array (
+            \'from\' => \'<basepath>/custom/Extension/application/Ext/Language/en_us.custom_language_file.php\',
+            \'to_module\' => \'application\',
+            \'language\' => \'en_us\',
+        ),
+);
+',
+            ),
+        );
+
+        vfsStream::create($structure);
+
+
+        $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url($this->rootDirName . '/pkg'));
+
+        $finalInstallDefs = $pService->buildUpInstallDefs($fileList, 'my_id_001', new MockMessageOutputter(),
+            function($file_relative, $ignoreMap) use ($pConfig)  {
+                return true;
+            },
+            $pConfig
+        );
+
+        //echo print_r($finalInstallDefs, true);
+        $this->assertIsArray($finalInstallDefs);
+        $this->assertArrayHasKey('copy', $finalInstallDefs);
+        $this->assertCount(4, $finalInstallDefs);
+        $this->assertCount(3, $finalInstallDefs['copy']);
+    }
+
+    public function testBuildUpInstallDefsWithCustomInstallDefs()
+    {
+        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
+        $pService = new PackagerService($readerWriter);
+
+        $pConfig = new PackagerConfiguration('0.0.2', $this->softwareName, $this->softwareVersion,
+            vfsStream::url($this->rootDirName));
+
+        //
+        $structure = array(
+            'src' => array(
+            ),
+            'pkg' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                'WOM2Api.php' => '<?php echo "Hello";',
+                            ),
+                        ),
+                    ),
+                    'Extension' => array(
+                        "application" => array(
+                            "Ext" => array(
+                                "Language" => array(
+                                    "en_us.custom_language_file.php" => '<?php echo "Language File";',
+                                )
+                            )
+                        )
                     ),
                 ),
                 'modules' => array(
@@ -480,7 +576,17 @@ $installdefs[\'beans\'] = array (
             \'path\' => \'modules/Packages/Packages.php\',
             \'tab\' => false,
         ),
-);',
+);
+
+$installdefs[\'language\'] = array (
+    0 =>
+        array (
+            \'from\' => \'<basepath>/custom/Extension/application/Ext/Language/en_us.custom_language_file.php\',
+            \'to_module\' => \'application\',
+            \'language\' => \'en_us\',
+        ),
+);
+',
             ),
         );
 
@@ -490,17 +596,129 @@ $installdefs[\'beans\'] = array (
         $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url($this->rootDirName . '/pkg'));
 
         $finalInstallDefs = $pService->buildUpInstallDefs($fileList, 'my_id_001', new MockMessageOutputter(),
-            function($file_relative, $installDefs) {
+            function($file_relative, $ignoreMap) use ($pConfig)  {
+                //return true;
+                if (in_array(basename($file_relative), $pConfig->getFilesToRemoveFromManifestCopy())) {
+                    return false;
+                }
+
+                if (in_array($file_relative, $ignoreMap)) {
+                    return false;
+                }
+
                 return true;
             },
-            vfsStream::url($this->rootDirName . '/configuration/installdefs.php')
+            $pConfig
+            //vfsStream::url($this->rootDirName . '/configuration/installdefs.php')
         );
 
+        //echo print_r($finalInstallDefs, true);
         $this->assertIsArray($finalInstallDefs);
         $this->assertArrayHasKey('copy', $finalInstallDefs);
-        $this->assertCount(3, $finalInstallDefs);
+        $this->assertCount(4, $finalInstallDefs);
         $this->assertCount(2, $finalInstallDefs['copy']);
-        //echo print_r($finalInstallDefs, true);
+    }
+
+    public function testBuildUpInstallDefsWithCustomInstallDefsDeluxe()
+    {
+        $readerWriter = new ReaderWriterTestDecorator(new FileReaderWriterImpl());
+        $pService = new PackagerService($readerWriter);
+
+        $pConfig = new PackagerConfiguration('0.0.2', $this->softwareName, $this->softwareVersion,
+            vfsStream::url($this->rootDirName));
+
+        //
+        $structure = array(
+            'src' => array(
+            ),
+            'pkg' => array(
+                'custom' => array(
+                    'clients' => array(
+                        'base' => array(
+                            'api' => array(
+                                'WOM2Api.php' => '<?php echo "Hello";',
+                            ),
+                        ),
+                    ),
+                    'Extension' => array(
+                        "application" => array(
+                            "Ext" => array(
+                                "Language" => array(
+                                    "en_us.custom_language_file.php" => '<?php echo "Language File";',
+                                ),
+                                "JSGroupings" => array(
+                                    "my_grouping.php" => '<?php echo "JSGrouping Definition";',
+                                )
+                            )
+                        )
+                    ),
+                ),
+                'modules' => array(
+                    'Packages' => array(
+                        'Packages.php' => '<?php echo \'Hello\'',
+                    ),
+                ),
+            ),
+            'configuration' => array(
+                'manifest.php' => '<?php echo "my manifest file";',
+                'installdefs.php' => '<?php
+
+$installdefs[\'beans\'] = array (
+    0 =>
+        array (
+            \'module\' => \'Packages\',
+            \'class\' => \'Packages\',
+            \'path\' => \'modules/Packages/Packages.php\',
+            \'tab\' => false,
+        ),
+);
+
+$installdefs[\'language\'] = array (
+    0 =>
+        array (
+            \'from\' => \'<basepath>/custom/Extension/application/Ext/Language/en_us.custom_language_file.php\',
+            \'to_module\' => \'application\',
+            \'language\' => \'en_us\',
+        ),
+);
+$installdefs[\'jsgroups\'] = array (
+    0 =>
+        array (
+            \'from\' => \'<basepath>/custom/Extension/application/Ext/JSGroupings/my_grouping.php\',
+            \'to_module\' => \'application\',
+        ),
+);
+',
+            ),
+        );
+
+        vfsStream::create($structure);
+
+
+        $fileList = $readerWriter->getFilesFromDirectory(vfsStream::url($this->rootDirName . '/pkg'));
+
+        $finalInstallDefs = $pService->buildUpInstallDefs($fileList, 'my_id_001', new MockMessageOutputter(),
+            function($file_relative, $ignoreMap) use ($pConfig)  {
+                //return true;
+                if (in_array(basename($file_relative), $pConfig->getFilesToRemoveFromManifestCopy())) {
+                    return false;
+                }
+
+                if (in_array($file_relative, $ignoreMap)) {
+                    return false;
+                }
+
+                return true;
+            },
+            $pConfig
+        //vfsStream::url($this->rootDirName . '/configuration/installdefs.php')
+        );
+
+//        echo print_r($finalInstallDefs, true);
+        $this->assertIsArray($finalInstallDefs);
+        $this->assertArrayHasKey('copy', $finalInstallDefs);
+        $this->assertCount(5, $finalInstallDefs);
+        $this->assertCount(2, $finalInstallDefs['copy']);
     }
 
     public function testBuildFinalManifestWithEmptyManifestBase()

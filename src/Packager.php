@@ -22,6 +22,10 @@ class Packager
     /* @var PackagerService $packagerService */
     private $packagerService;
 
+    /* @var $installdefsIgnoreMap array */
+    private $installdefsIgnoreMap = array();
+
+
     /**
      * Packager constructor.
      * @param PackagerService $packagerService
@@ -68,26 +72,21 @@ class Packager
 
     /**
      * @param $file_relative
-     * @param array $customInstalldefs
+     * @param array $ignoreMap contains all the files based on the installdefs keys that we
+     * should ignore and not include in the manifest copy section.
      * @return bool
      */
-    protected function shouldAddToManifestCopy($file_relative, $customInstalldefs)
+    protected function shouldAddToManifestCopy($file_relative, array $ignoreMap)
     {
-        if (!in_array(basename($file_relative), $this->config->getFilesToRemoveFromManifestCopy())) {
-            // check and dont copy all *_execute and *_uninstall installdefs keyword files
-            foreach ($this->config->getInstalldefsKeysToRemoveFromManifestCopy() as $to_remove) {
-                if (!empty($customInstalldefs[$to_remove])) {
-                    foreach ($customInstalldefs[$to_remove] as $manifest_file_copy) {
-                        // found matching relative file as one of the *_execute or *_uninstall scripts
-                        if (strcmp(str_replace('<basepath>/', '', $manifest_file_copy), $file_relative) == 0) {
-                            return false;
-                        }
-                    }
-                }
-            }
-            return true;
+        if (in_array(basename($file_relative), $this->config->getFilesToRemoveFromManifestCopy())) {
+            return false;
         }
-        return false;
+
+        if (in_array($file_relative, $ignoreMap)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -137,14 +136,19 @@ class Packager
                 $this->config->getPathToPkgDir());
         }
 
+        /*
+         * Start building up the installdefs portion of the manifest incorporating the installdefs.php under
+         * the config directory, if present
+         */
+
         $installDefs = $this->packagerService->buildUpInstallDefs(
             $this->packagerService->getFilesFromDirectory($this->config->getPathToPkgDir()),
             $manifest['id'],
             $this->messageOutputter,
-            function($file_relative, $customInstallDefs) {
-                return $this->shouldAddToManifestCopy($file_relative, $customInstallDefs);
+            function($file_relative, $ignoreMap) {
+                return $this->shouldAddToManifestCopy($file_relative, $ignoreMap);
             },
-            $this->config->getPathToConfigInstalldefsFile()
+            $this->config
         );
 
         $pkgDirFiles = $this->packagerService->getFilesFromDirectory(
